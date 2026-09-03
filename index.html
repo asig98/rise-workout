@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a12">
+<title>Rise — Daily Home Workout</title>
+
+<!-- Fonts. If you're offline these just fall back to your system fonts. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   1. DESIGN TOKENS
+   Every color and size lives here. Change a value in this block
+   and it updates everywhere in the app. Try it — swap --accent
+   for "#22d3ee" and watch the whole app change personality.
+   ============================================================ */
+:root{
+  --bg:            #08080f;
+  --surface:       rgba(255,255,255,0.045);
+  --surface-hi:    rgba(255,255,255,0.08);
+  --border:        rgba(255,255,255,0.10);
+  --border-hi:     rgba(255,255,255,0.22);
+
+  --text:          #f4f3ff;
+  --text-soft:     rgba(244,243,255,0.62);
+  --text-faint:    rgba(244,243,255,0.34);
+
+  --accent:        #a78bfa;   /* violet  */
+  --accent-2:      #f472b6;   /* pink    */
+  --accent-3:      #38bdf8;   /* sky     */
+  --success:       #4ade80;   /* green   */
+
+  --radius:        22px;
+  --radius-sm:     14px;
+  --shadow:        0 24px 60px -18px rgba(0,0,0,0.85);
+
+  --font-display:  'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-quote:    'Fraunces', Georgia, 'Times New Roman', serif;
+}
+
+/* ============================================================
+   2. RESET + PAGE SHELL
+   ============================================================ */
+*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
+
+html{ -webkit-text-size-adjust:100%; }
+
+body{
+  min-height:100vh;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-display);
+  font-weight:400;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+  padding:clamp(16px,4vw,40px) clamp(14px,4vw,24px) 80px;
+  display:flex;
+  justify-content:center;
+}
+
+/* --- The moving "aurora" glow behind everything ---------------
+   Three big blurred circles that drift slowly. This is what makes
+   the page feel alive instead of flat. They sit behind all content
+   (z-index:-1) and ignore mouse clicks (pointer-events:none).
+----------------------------------------------------------------*/
+.aurora{
+  position:fixed; inset:0; z-index:-1;
+  pointer-events:none; overflow:hidden;
+}
+.blob{
+  position:absolute;
+  border-radius:50%;
+  filter:blur(90px);
+  opacity:0.5;
+  will-change:transform;
+}
+.blob.one{
+  width:52vmax; height:52vmax;
+  background:radial-gradient(circle,#7c3aed 0%,transparent 68%);
+  top:-18vmax; left:-14vmax;
+  animation:drift1 22s ease-in-out infinite alternate;
+}
+.blob.two{
+  width:46vmax; height:46vmax;
+  background:radial-gradient(circle,#db2777 0%,transparent 68%);
+  bottom:-20vmax; right:-12vmax;
+  animation:drift2 26s ease-in-out infinite alternate;
+}
+.blob.three{
+  width:40vmax; height:40vmax;
+  background:radial-gradient(circle,#0284c7 0%,transparent 68%);
+  top:38%; left:52%;
+  animation:drift3 30s ease-in-out infinite alternate;
+}
+@keyframes drift1{ to{ transform:translate(12vmax,10vmax) scale(1.15); } }
+@keyframes drift2{ to{ transform:translate(-14vmax,-8vmax) scale(1.1); } }
+@keyframes drift3{ to{ transform:translate(-16vmax,12vmax) scale(0.85); } }
+
+/* A faint grain texture over the top so the gradients don't band */
+body::after{
+  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  opacity:0.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   3. LAYOUT
+   ============================================================ */
+.app{ width:100%; max-width:620px; }
+
+/* Every card in the app shares this frosted-glass look */
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  box-shadow:var(--shadow);
+}
+
+/* Fade-and-rise entrance. The --d variable staggers each element. */
+.rise{
+  opacity:0;
+  animation:rise .8s cubic-bezier(.16,1,.3,1) forwards;
+  animation-delay:var(--d,0s);
+}
+@keyframes rise{ from{ opacity:0; transform:translateY(22px);} to{ opacity:1; transform:none; } }
+
+/* ============================================================
+   4. HEADER
+   ============================================================ */
+header{ margin-bottom:22px; }
+
+.eyebrow{
+  display:flex; align-items:center; gap:9px;
+  font-size:11px; font-weight:600; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--text-faint);
+  margin-bottom:10px;
+}
+.eyebrow .dot{
+  width:6px; height:6px; border-radius:50%;
+  background:var(--success);
+  box-shadow:0 0 12px var(--success);
+  animation:pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse{ 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.45;transform:scale(.8);} }
+
+.title-row{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:16px; flex-wrap:wrap;
+}
+h1{
+  font-size:clamp(38px,9vw,60px);
+  font-weight:800; line-height:0.95; letter-spacing:-0.035em;
+  background:linear-gradient(115deg,#fff 10%,var(--accent) 55%,var(--accent-2) 95%);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+}
+.subtitle{ color:var(--text-soft); font-size:15px; margin-top:8px; font-weight:300; }
+
+/* Streak badge (top right) */
+.streak{
+  display:flex; align-items:center; gap:9px;
+  padding:9px 15px; border-radius:100px;
+  background:var(--surface-hi); border:1px solid var(--border);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  white-space:nowrap; flex-shrink:0;
+}
+.streak .flame{ font-size:17px; filter:drop-shadow(0 0 8px rgba(251,146,60,.8)); }
+.streak b{ font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; }
+.streak span{ font-size:12px; color:var(--text-soft); }
+
+/* ============================================================
+   5. QUOTE CARD
+   ============================================================ */
+.quote-card{
+  position:relative; overflow:hidden;
+  padding:32px 28px 26px;
+  margin-bottom:22px;
+}
+/* Bright gradient hairline across the top edge of the card */
+.quote-card::before{
+  content:""; position:absolute; top:0; left:0; right:0; height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--accent-2),var(--accent-3),transparent);
+  opacity:.9;
+}
+/* Giant decorative quotation mark */
+.quote-card::after{
+  content:'"';
+  position:absolute; top:-26px; right:14px;
+  font-family:var(--font-quote); font-size:170px; line-height:1;
+  color:rgba(255,255,255,0.045); pointer-events:none; user-select:none;
+}
+#quote{
+  font-family:var(--font-quote);
+  font-size:clamp(20px,4.6vw,27px);
+  font-weight:400; line-height:1.36; letter-spacing:-0.015em;
+  position:relative; z-index:1;
+}
+#author{
+  margin-top:16px; font-size:12px; font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--accent);
+}
+/* Applied briefly when the quote is re-rolled, for a soft swap */
+.quote-swap{ animation:swap .5s ease; }
+@keyframes swap{ from{opacity:0; transform:translateY(10px) } to{opacity:1; transform:none} }
+
+.newquote{
+  margin-top:18px;
+  background:none; border:1px solid var(--border);
+  color:var(--text-soft); font-family:inherit;
+  font-size:12px; font-weight:500;
+  padding:7px 14px; border-radius:100px; cursor:pointer;
+  transition:all .25s ease;
+}
+.newquote:hover{ border-color:var(--border-hi); color:var(--text); background:var(--surface-hi); }
+
+/* ============================================================
+   6. PROGRESS RING
+   ============================================================ */
+.progress-card{
+  padding:24px 26px;
+  margin-bottom:22px;
+  display:flex; align-items:center; gap:22px;
+}
+.ring{ position:relative; width:96px; height:96px; flex-shrink:0; }
+.ring svg{ transform:rotate(-90deg); display:block; }
+.ring .track{ fill:none; stroke:rgba(255,255,255,0.08); stroke-width:9; }
+.ring .fill{
+  fill:none; stroke:url(#ringGrad); stroke-width:9; stroke-linecap:round;
+  /* stroke-dasharray + stroke-dashoffset are set by JavaScript */
+  transition:stroke-dashoffset .9s cubic-bezier(.16,1,.3,1);
+  filter:drop-shadow(0 0 8px rgba(167,139,250,.65));
+}
+.ring-label{
+  position:absolute; inset:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+}
+.ring-label b{ font-size:24px; font-weight:700; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; }
+.ring-label span{ font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--text-faint); }
+
+.progress-text h2{ font-size:19px; font-weight:600; letter-spacing:-0.02em; margin-bottom:5px; }
+.progress-text p{ font-size:14px; color:var(--text-soft); font-weight:300; }
+
+/* ============================================================
+   7. THE CHECKLIST
+   ============================================================ */
+.list-card{ padding:10px; margin-bottom:20px; }
+
+.exercise{
+  display:flex; align-items:center; gap:16px;
+  padding:16px 16px;
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  position:relative;
+  transition:background .25s ease, transform .18s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.exercise:hover{ background:var(--surface-hi); }
+.exercise:active{ transform:scale(0.985); }
+/* Thin divider between rows, but not after the last one */
+.exercise:not(:last-child)::after{
+  content:""; position:absolute; left:64px; right:16px; bottom:0;
+  height:1px; background:var(--border);
+}
+
+/* --- The custom checkbox ------------------------------------
+   The real <input> is hidden (see .exercise input) and this box
+   is what people actually see. The SVG check inside is "drawn"
+   using stroke-dasharray when the item becomes complete.
+--------------------------------------------------------------*/
+.exercise input{ position:absolute; opacity:0; pointer-events:none; }
+
+.box{
+  width:30px; height:30px; flex-shrink:0;
+  border:2px solid var(--border-hi); border-radius:10px;
+  display:grid; place-items:center;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+}
+.box svg{ width:17px; height:17px; }
+.box svg path{
+  fill:none; stroke:#08080f; stroke-width:3.4;
+  stroke-linecap:round; stroke-linejoin:round;
+  stroke-dasharray:24; stroke-dashoffset:24;   /* hidden by default */
+  transition:stroke-dashoffset .35s ease .08s;
+}
+
+.exercise .info{ flex:1; min-width:0; display:flex; flex-direction:column; }
+.exercise .name{
+  font-size:16px; font-weight:500; letter-spacing:-0.01em;
+  transition:color .3s ease;
+}
+.exercise .reps{
+  font-size:13px; color:var(--text-faint); font-weight:300; margin-top:2px;
+  transition:color .3s ease;
+}
+
+/* --- Completed state ---------------------------------------
+   :checked + .box  means "the .box element right after a checked
+   input". This is how we style without any JavaScript classes.
+--------------------------------------------------------------*/
+.exercise input:checked + .box{
+  background:linear-gradient(135deg,var(--success),#22d3ee);
+  border-color:transparent;
+  box-shadow:0 0 22px rgba(74,222,128,.55);
+  animation:pop .42s cubic-bezier(.34,1.56,.64,1);
+}
+.exercise input:checked + .box svg path{ stroke-dashoffset:0; }
+@keyframes pop{ 0%{transform:scale(1)} 45%{transform:scale(1.32)} 100%{transform:scale(1)} }
+
+.exercise input:checked ~ .info .name{
+  color:var(--text-faint);
+  text-decoration:line-through;
+  text-decoration-color:rgba(74,222,128,.7);
+  text-decoration-thickness:2px;
+}
+.exercise input:checked ~ .info .reps{ color:rgba(244,243,255,0.2); }
+
+/* Keyboard focus outline — important for accessibility */
+.exercise input:focus-visible + .box{ outline:2px solid var(--accent); outline-offset:3px; }
+
+/* ============================================================
+   8. RESET BUTTON
+   ============================================================ */
+.reset{
+  display:block; margin:0 auto;
+  background:none; border:none;
+  color:var(--text-faint); font-family:inherit; font-size:13px;
+  padding:10px 18px; cursor:pointer; border-radius:100px;
+  transition:color .25s ease, background .25s ease;
+}
+.reset:hover{ color:var(--text-soft); background:var(--surface); }
+
+/* ============================================================
+   9. CELEBRATION OVERLAY (the "GREAT JOB" screen)
+   ============================================================ */
+#celebration{
+  position:fixed; inset:0; z-index:60;
+  display:grid; place-items:center;
+  padding:24px;
+  background:rgba(8,8,15,0.72);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  opacity:0; visibility:hidden;
+  transition:opacity .45s ease, visibility .45s;
+}
+#celebration.show{ opacity:1; visibility:visible; }
+
+.celebrate-box{
+  text-align:center; max-width:440px;
+  padding:44px 34px;
+  border-radius:30px;
+  background:var(--surface);
+  border:1px solid var(--border-hi);
+  box-shadow:var(--shadow);
+  transform:scale(.86) translateY(20px);
+  transition:transform .6s cubic-bezier(.16,1,.3,1);
+}
+#celebration.show .celebrate-box{ transform:none; }
+
+.celebrate-box .emoji{
+  font-size:64px; line-height:1; margin-bottom:18px; display:block;
+  animation:bounce 1.4s ease-in-out infinite;
+}
+@keyframes bounce{ 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-14px) rotate(4deg)} }
+
+.celebrate-box h2{
+  font-size:clamp(34px,8vw,48px); font-weight:800; letter-spacing:-0.04em;
+  line-height:1.05; margin-bottom:14px;
+  background:linear-gradient(115deg,var(--success),var(--accent-3),var(--accent));
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:transparent;
+}
+.celebrate-box p{ color:var(--text-soft); font-size:16px; font-weight:300; margin-bottom:26px; }
+
+.celebrate-box button{
+  background:linear-gradient(115deg,var(--accent),var(--accent-2));
+  border:none; color:#fff; font-family:inherit;
+  font-size:15px; font-weight:600;
+  padding:13px 34px; border-radius:100px; cursor:pointer;
+  transition:transform .2s ease, box-shadow .2s ease;
+  box-shadow:0 10px 30px -8px rgba(167,139,250,.7);
+}
+.celebrate-box button:hover{ transform:translateY(-2px); box-shadow:0 16px 40px -8px rgba(167,139,250,.85); }
+
+/* The confetti canvas floats above everything and ignores clicks */
+#confetti{
+  position:fixed; inset:0; z-index:100;
+  pointer-events:none;
+}
+
+/* Small "nice one!" toast that pops when you tick a single item */
+#toast{
+  position:fixed; left:50%; bottom:34px; z-index:70;
+  transform:translate(-50%,26px);
+  padding:11px 24px; border-radius:100px;
+  background:rgba(20,20,32,0.9);
+  border:1px solid var(--border-hi);
+  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  font-size:14px; font-weight:500;
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease, transform .45s cubic-bezier(.16,1,.3,1);
+  white-space:nowrap;
+}
+#toast.show{ opacity:1; transform:translate(-50%,0); }
+
+footer{ text-align:center; margin-top:34px; font-size:12px; color:var(--text-faint); }
+
+/* Respect people who've asked their device to reduce motion */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- The three drifting glow blobs -->
+<div class="aurora" aria-hidden="true">
+  <div class="blob one"></div>
+  <div class="blob two"></div>
+  <div class="blob three"></div>
+</div>
+
+<!-- Confetti is drawn onto this canvas -->
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<main class="app">
+
+  <header class="rise" style="--d:.05s">
+    <div class="eyebrow"><span class="dot"></span><span id="today">Today</span></div>
+    <div class="title-row">
+      <div>
+        <h1>Rise.</h1>
+        <p class="subtitle">Your workout, at home, today.</p>
+      </div>
+      <div class="streak" title="Days completed in a row">
+        <span class="flame">🔥</span>
+        <b id="streakCount">0</b>
+        <span>day streak</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- QUOTE -->
+  <section class="card quote-card rise" style="--d:.15s">
+    <p id="quote">Loading…</p>
+    <p id="author">—</p>
+    <button class="newquote" id="newQuote">↻ Another one</button>
+  </section>
+
+  <!-- PROGRESS -->
+  <section class="card progress-card rise" style="--d:.25s">
+    <div class="ring">
+      <svg width="96" height="96" viewBox="0 0 96 96">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#a78bfa"/>
+            <stop offset="50%"  stop-color="#f472b6"/>
+            <stop offset="100%" stop-color="#38bdf8"/>
+          </linearGradient>
+        </defs>
+        <circle class="track" cx="48" cy="48" r="40"/>
+        <circle class="fill"  cx="48" cy="48" r="40" id="ringFill"/>
+      </svg>
+      <div class="ring-label">
+        <b id="pct">0%</b>
+        <span>done</span>
+      </div>
+    </div>
+    <div class="progress-text">
+      <h2 id="progressTitle">Let's get moving</h2>
+      <p id="progressSub">0 of 8 exercises complete</p>
+    </div>
+  </section>
+
+  <!-- CHECKLIST — the rows are built by JavaScript from the WORKOUT list below -->
+  <section class="card list-card rise" style="--d:.35s" id="list"></section>
+
+  <button class="reset" id="reset">Reset today's workout</button>
+
+  <footer>Built by Alex · Move a little every day.</footer>
+</main>
+
+<!-- CELEBRATION SCREEN -->
+<div id="celebration">
+  <div class="celebrate-box">
+    <span class="emoji">🎉</span>
+    <h2 id="celebrateTitle">GREAT JOB!</h2>
+    <p id="celebrateMsg">You finished every exercise today. That's a win.</p>
+    <button id="closeCelebrate">Keep it going</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   PART A — YOUR CONTENT
+   This is the part you'll edit most. Add, remove, or reword
+   anything here and the app updates itself.
+   ============================================================ */
+
+// Each line is one row in the checklist.
+// To add an exercise, copy a line and change the words.
+const WORKOUT = [
+  { name: "Jumping Jacks",      reps: "60 seconds · warm up" },
+  { name: "Push-Ups",           reps: "3 sets × 12" },
+  { name: "Bodyweight Squats",  reps: "3 sets × 15" },
+  { name: "Plank Hold",         reps: "3 sets × 45 seconds" },
+  { name: "Lunges",             reps: "3 sets × 10 each leg" },
+  { name: "Glute Bridges",      reps: "3 sets × 15" },
+  { name: "Mountain Climbers",  reps: "3 sets × 30 seconds" },
+  { name: "Stretch & Cool Down",reps: "5 minutes" }
+];
+
+// The pool the daily quote is picked from. Add your own freely.
+const QUOTES = [
+  { t: "The body achieves what the mind believes.", a: "Napoleon Hill" },
+  { t: "It never gets easier. You just get stronger.", a: "Unknown" },
+  { t: "Discipline is choosing between what you want now and what you want most.", a: "Abraham Lincoln" },
+  { t: "You don't have to be extreme, just consistent.", a: "Unknown" },
+  { t: "The only bad workout is the one that didn't happen.", a: "Unknown" },
+  { t: "Take care of your body. It's the only place you have to live.", a: "Jim Rohn" },
+  { t: "Small daily improvements are the key to staggering long-term results.", a: "Unknown" },
+  { t: "Motivation gets you started. Habit keeps you going.", a: "Jim Ryun" },
+  { t: "Your only limit is you.", a: "Unknown" },
+  { t: "Strength does not come from what you can do. It comes from overcoming what you thought you couldn't.", a: "Rikki Rogers" },
+  { t: "Don't wish for it. Work for it.", a: "Unknown" },
+  { t: "A one hour workout is 4% of your day. No excuses.", a: "Unknown" },
+  { t: "Success is the sum of small efforts repeated day in and day out.", a: "Robert Collier" },
+  { t: "The hardest lift of all is lifting yourself off the couch.", a: "Unknown" },
+  { t: "Sweat is just fat crying.", a: "Unknown" },
+  { t: "You are one workout away from a good mood.", a: "Unknown" },
+  { t: "Fall in love with taking care of yourself.", a: "Unknown" },
+  { t: "The difference between try and triumph is a little umph.", a: "Marvin Phillips" },
+  { t: "Nothing will work unless you do.", a: "Maya Angelou" },
+  { t: "Push yourself, because no one else is going to do it for you.", a: "Unknown" },
+  { t: "Energy and persistence conquer all things.", a: "Benjamin Franklin" },
+  { t: "Do something today that your future self will thank you for.", a: "Sean Patrick Flanery" },
+  { t: "It's going to be a journey. It's not a sprint to get in shape.", a: "Kerri Walsh Jennings" },
+  { t: "The pain you feel today will be the strength you feel tomorrow.", a: "Unknown" },
+  { t: "You miss 100% of the shots you don't take.", a: "Wayne Gretzky" },
+  { t: "Wake up with determination. Go to bed with satisfaction.", a: "Unknown" },
+  { t: "Good things come to those who sweat.", a: "Unknown" },
+  { t: "If it doesn't challenge you, it won't change you.", a: "Fred DeVito" },
+  { t: "Fitness is not about being better than someone else. It's about being better than you used to be.", a: "Unknown" },
+  { t: "The clock is ticking. Are you becoming the person you want to be?", a: "Greg Plitt" },
+  { t: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", a: "Will Durant" },
+  { t: "Believe you can and you're halfway there.", a: "Theodore Roosevelt" },
+  { t: "Start where you are. Use what you have. Do what you can.", a: "Arthur Ashe" },
+  { t: "The groundwork for all happiness is good health.", a: "Leigh Hunt" },
+  { t: "Every workout is progress, no matter how small.", a: "Unknown" },
+  { t: "Rome wasn't built in a day, but they worked on it every single day.", a: "Unknown" },
+  { t: "Your body can stand almost anything. It's your mind you have to convince.", a: "Unknown" },
+  { t: "Sore today, strong tomorrow.", a: "Unknown" },
+  { t: "Change happens at the end of your comfort zone.", a: "Roy T. Bennett" },
+  { t: "Don't stop when you're tired. Stop when you're done.", a: "Unknown" }
+];
+
+// Short messages that appear when you tick one item off.
+const NUDGES = ["Nice one! 💪","Keep going!","That's one down.","Strong work!","Yes! 🔥","Love that.","Momentum!","One rep closer."];
+
+// Titles shown on the big celebration screen (one is picked at random).
+const WINS = ["GREAT JOB!","YOU CRUSHED IT!","WORKOUT COMPLETE!","LEGEND!","THAT'S A WIN!"];
+
+
+/* ============================================================
+   PART B — SAVING PROGRESS
+   Browsers give every website a small storage box called
+   localStorage. We keep today's checkmarks and the streak there
+   so it survives a refresh. It's wrapped in try/catch because a
+   few browser modes block storage — if that happens the app
+   still works, it just forgets on reload.
+   ============================================================ */
+const KEY = "rise-workout-v1";
+let memoryFallback = null;   // used if localStorage isn't available
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ /* storage blocked — fall through */ }
+  return memoryFallback || {};
+}
+
+function saveState(state){
+  memoryFallback = state;
+  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
+  catch(e){ /* storage blocked — memoryFallback still holds it */ }
+}
+
+// "2026-09-03" — a simple text key for "which day is it"
+function todayKey(){
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
+}
+
+// Load, and wipe the checkmarks if it's a new day
+let state = loadState();
+if(state.date !== todayKey()){
+  state = { date: todayKey(), done: [], streak: state.streak || 0, lastWin: state.lastWin || null };
+  saveState(state);
+}
+
+
+/* ============================================================
+   PART C — THE DAILY QUOTE
+   We want the SAME quote all day, but a DIFFERENT one tomorrow.
+   So instead of Math.random(), we count how many days have passed
+   since 1970 and use that number to pick from the list.
+   ============================================================ */
+let quoteOffset = 0;   // bumped by the "Another one" button
+
+function showQuote(animate){
+  const daysSinceEpoch = Math.floor(Date.now() / 86400000);   // 86,400,000 ms = 1 day
+  const index = (daysSinceEpoch + quoteOffset) % QUOTES.length;
+  const q = QUOTES[index];
+
+  const quoteEl  = document.getElementById("quote");
+  const authorEl = document.getElementById("author");
+
+  quoteEl.textContent  = q.t;
+  authorEl.textContent = "— " + q.a;
+
+  if(animate){
+    // Remove then re-add the class so the animation can replay
+    quoteEl.classList.remove("quote-swap");
+    void quoteEl.offsetWidth;              // forces the browser to notice
+    quoteEl.classList.add("quote-swap");
+  }
+}
+
+document.getElementById("newQuote").addEventListener("click", () => {
+  quoteOffset++;
+  showQuote(true);
+});
+
+
+/* ============================================================
+   PART D — BUILDING THE CHECKLIST
+   Rather than typing 8 near-identical blocks of HTML, we loop
+   over the WORKOUT list and build each row in code.
+   ============================================================ */
+const listEl = document.getElementById("list");
+
+WORKOUT.forEach((item, i) => {
+  const row = document.createElement("label");   // a <label> so the whole row is clickable
+  row.className = "exercise";
+  row.innerHTML = `
+    <input type="checkbox" data-index="${i}">
+    <span class="box">
+      <svg viewBox="0 0 24 24"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg>
+    </span>
+    <span class="info">
+      <span class="name">${item.name}</span>
+      <span class="reps">${item.reps}</span>
+    </span>
+  `;
+  listEl.appendChild(row);
+});
+
+const boxes = listEl.querySelectorAll('input[type="checkbox"]');
+
+// Restore anything that was already ticked earlier today
+boxes.forEach((box, i) => {
+  if(state.done.includes(i)) box.checked = true;
+  box.addEventListener("change", () => onToggle(box, i));
+});
+
+
+/* ============================================================
+   PART E — WHAT HAPPENS WHEN YOU TICK A BOX
+   ============================================================ */
+function onToggle(box, index){
+  if(box.checked){
+    if(!state.done.includes(index)) state.done.push(index);
+
+    // Fire a little confetti burst right where the checkbox is
+    const rect = box.nextElementSibling.getBoundingClientRect();
+    burst(rect.left + rect.width/2, rect.top + rect.height/2, 26);
+
+    // ...and a quick encouraging toast
+    toast(NUDGES[Math.floor(Math.random()*NUDGES.length)]);
+  } else {
+    state.done = state.done.filter(n => n !== index);
+  }
+
+  saveState(state);
+  updateProgress();
+}
+
+function updateProgress(){
+  const total = WORKOUT.length;
+  const done  = state.done.length;
+  const pct   = Math.round(done / total * 100);
+
+  // --- the ring ---
+  // A circle's outline length is 2 × π × radius. Our radius is 40.
+  // We draw the full outline, then "hide" part of it with dashoffset.
+  const circumference = 2 * Math.PI * 40;
+  const ring = document.getElementById("ringFill");
+  ring.style.strokeDasharray  = circumference;
+  ring.style.strokeDashoffset = circumference * (1 - done/total);
+
+  document.getElementById("pct").textContent = pct + "%";
+  document.getElementById("progressSub").textContent = `${done} of ${total} exercises complete`;
+
+  const title = document.getElementById("progressTitle");
+  if(done === 0)            title.textContent = "Let's get moving";
+  else if(pct < 50)         title.textContent = "Good start";
+  else if(pct < 100)        title.textContent = "Almost there";
+  else                      title.textContent = "Workout complete!";
+
+  // --- did they just finish everything? ---
+  if(done === total && state.lastWin !== todayKey()){
+    state.lastWin = todayKey();
+    state.streak  = (state.streak || 0) + 1;
+    saveState(state);
+    document.getElementById("streakCount").textContent = state.streak;
+    setTimeout(celebrate, 320);   // small pause so the last checkmark animation lands first
+  }
+}
+
+
+/* ============================================================
+   PART F — THE CELEBRATION
+   ============================================================ */
+function celebrate(){
+  document.getElementById("celebrateTitle").textContent = WINS[Math.floor(Math.random()*WINS.length)];
+  document.getElementById("celebrateMsg").textContent =
+    state.streak > 1
+      ? `That's ${state.streak} days in a row. You're building something real.`
+      : "You finished every exercise today. That's a win.";
+
+  document.getElementById("celebration").classList.add("show");
+  bigConfetti();
+}
+
+document.getElementById("closeCelebrate").addEventListener("click", () => {
+  document.getElementById("celebration").classList.remove("show");
+});
+
+// Escape key also closes it
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape") document.getElementById("celebration").classList.remove("show");
+});
+
+
+/* ============================================================
+   PART G — CONFETTI
+   No library needed. We draw little rotating rectangles onto a
+   full-screen canvas and let gravity pull them down.
+   ============================================================ */
+const canvas = document.getElementById("confetti");
+const ctx    = canvas.getContext("2d");
+let particles = [];
+let animating = false;
+
+function sizeCanvas(){
+  // Multiply by devicePixelRatio so it stays crisp on retina screens
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = window.innerWidth  * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width  = window.innerWidth  + "px";
+  canvas.style.height = window.innerHeight + "px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+sizeCanvas();
+window.addEventListener("resize", sizeCanvas);
+
+const COLORS = ["#a78bfa","#f472b6","#38bdf8","#4ade80","#fbbf24","#fb7185","#ffffff"];
+
+// One burst from a single point (used when you tick a box)
+function burst(x, y, count){
+  for(let i = 0; i < count; i++){
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 3 + Math.random() * 7;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 3,
+      size: 4 + Math.random() * 6,
+      color: COLORS[Math.floor(Math.random()*COLORS.length)],
+      rotation: Math.random() * 360,
+      spin: (Math.random() - 0.5) * 22,
+      life: 1
+    });
+  }
+  start();
+}
+
+// The full-screen shower (used for finishing the whole workout)
+function bigConfetti(){
+  // Three waves, slightly apart, so it rains rather than blinks
+  for(let wave = 0; wave < 3; wave++){
+    setTimeout(() => {
+      for(let i = 0; i < 90; i++){
+        particles.push({
+          x: Math.random() * window.innerWidth,
+          y: -20 - Math.random() * 120,
+          vx: (Math.random() - 0.5) * 5,
+          vy: 2 + Math.random() * 5,
+          size: 5 + Math.random() * 8,
+          color: COLORS[Math.floor(Math.random()*COLORS.length)],
+          rotation: Math.random() * 360,
+          spin: (Math.random() - 0.5) * 18,
+          life: 1
+        });
+      }
+      start();
+    }, wave * 260);
+  }
+  // Two side cannons for good measure
+  burst(40, window.innerHeight * 0.7, 45);
+  burst(window.innerWidth - 40, window.innerHeight * 0.7, 45);
+}
+
+function start(){
+  if(!animating){ animating = true; requestAnimationFrame(tick); }
+}
+
+function tick(){
+  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+
+  particles.forEach(p => {
+    p.vy       += 0.28;      // gravity
+    p.vx       *= 0.995;     // air resistance
+    p.x        += p.vx;
+    p.y        += p.vy;
+    p.rotation += p.spin;
+    p.life     -= 0.006;     // slowly fade out
+
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rotation * Math.PI / 180);
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.6);
+    ctx.restore();
+  });
+
+  // Throw away anything that's faded or fallen off the bottom
+  particles = particles.filter(p => p.life > 0 && p.y < window.innerHeight + 60);
+
+  if(particles.length > 0){
+    requestAnimationFrame(tick);
+  } else {
+    animating = false;
+    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  }
+}
+
+
+/* ============================================================
+   PART H — THE LITTLE TOAST MESSAGE
+   ============================================================ */
+let toastTimer;
+function toast(text){
+  const el = document.getElementById("toast");
+  el.textContent = text;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 1700);
+}
+
+
+/* ============================================================
+   PART I — RESET BUTTON
+   ============================================================ */
+document.getElementById("reset").addEventListener("click", () => {
+  state.done = [];
+  saveState(state);
+  boxes.forEach(b => b.checked = false);
+  updateProgress();
+  toast("Reset — fresh start.");
+});
+
+
+/* ============================================================
+   PART J — START THE APP
+   ============================================================ */
+document.getElementById("today").textContent =
+  new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+
+document.getElementById("streakCount").textContent = state.streak || 0;
+
+showQuote(false);
+updateProgress();
+</script>
+</body>
+</html>
