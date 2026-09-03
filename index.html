@@ -3,8 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#0a0a12">
+<meta name="theme-color" content="#08080f">
 <title>Rise — Daily Home Workout</title>
+
+<!-- ===== Makes this installable as an app on a phone ===== -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rise">
+<meta name="description" content="A daily home workout checklist with a motivational quote and a celebration when you finish.">
 
 <!-- Fonts. If you're offline these just fall back to your system fonts. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -891,6 +901,22 @@ document.getElementById("streakCount").textContent = state.streak || 0;
 
 showQuote(false);
 updateProgress();
+
+
+/* ============================================================
+   PART K — TURN ON OFFLINE SUPPORT
+   This hands sw.js to the browser to run in the background.
+   It only works on a real web address (https://...), so it
+   quietly does nothing when you open the file by double-clicking
+   it on your computer. That's expected — not an error.
+   ============================================================ */
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js")
+      .then(()  => console.log("Offline support is on."))
+      .catch(err => console.log("Offline support not available here:", err.message));
+  });
+}
 </script>
 </body>
 </html>
