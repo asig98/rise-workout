@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#08080f">
 <title>Rise — Daily Home Workout</title>
 
-<!-- ===== Makes this installable as an app on a phone ===== -->
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -14,769 +13,1186 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Rise">
-<meta name="description" content="A daily home workout checklist with a motivational quote and a celebration when you finish.">
+<meta name="description" content="A daily home workout checklist with timers, streaks and progress tracking.">
 
-<!-- Fonts. If you're offline these just fall back to your system fonts. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;800&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     MAP OF THIS FILE — search for these headings to jump around
+     ============================================================
+     CSS  1. Tokens            CSS  7. Timer overlay
+     CSS  2. Reset & shell     CSS  8. Progress tab
+     CSS  3. Header            CSS  9. Routine tab
+     CSS  4. Quote             CSS 10. Celebration
+     CSS  5. Ring              CSS 11. Tab bar
+     CSS  6. Checklist
+     HTML   the three tabs, then the overlays
+     JS   A. Your content      JS  F. Timer
+     JS   B. Saving            JS  G. Progress + charts
+     JS   C. Quote             JS  H. Routine editor
+     JS   D. Today tab         JS  I. Confetti
+     JS   E. Ticking a box     JS  J. Start-up
+     ============================================================ -->
 
 <style>
-/* ============================================================
-   1. DESIGN TOKENS
-   Every color and size lives here. Change a value in this block
-   and it updates everywhere in the app. Try it — swap --accent
-   for "#22d3ee" and watch the whole app change personality.
-   ============================================================ */
+/* ===== CSS 1. TOKENS ===================================== */
 :root{
-  --bg:            #08080f;
-  --surface:       rgba(255,255,255,0.045);
-  --surface-hi:    rgba(255,255,255,0.08);
-  --border:        rgba(255,255,255,0.10);
-  --border-hi:     rgba(255,255,255,0.22);
+  --bg:#08080f;
+  --surface:rgba(255,255,255,0.045);
+  --surface-hi:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.10);
+  --border-hi:rgba(255,255,255,0.22);
 
-  --text:          #f4f3ff;
-  --text-soft:     rgba(244,243,255,0.62);
-  --text-faint:    rgba(244,243,255,0.34);
+  --text:#f4f3ff;
+  --text-soft:rgba(244,243,255,0.62);
+  --text-faint:rgba(244,243,255,0.34);
 
-  --accent:        #a78bfa;   /* violet  */
-  --accent-2:      #f472b6;   /* pink    */
-  --accent-3:      #38bdf8;   /* sky     */
-  --success:       #4ade80;   /* green   */
+  --accent:#a78bfa;
+  --accent-2:#f472b6;
+  --accent-3:#38bdf8;
+  --success:#4ade80;
+  --danger:#fb7185;
 
-  --radius:        22px;
-  --radius-sm:     14px;
-  --shadow:        0 24px 60px -18px rgba(0,0,0,0.85);
+  /* Sequential ramp for the heatmap: ONE hue, dim -> bright.
+     On a dark surface, "more" means brighter. Never a rainbow. */
+  --heat-0:rgba(255,255,255,0.055);
+  --heat-1:#4c3a8a;
+  --heat-2:#6d51c4;
+  --heat-3:#8b6ee6;
+  --heat-4:#a78bfa;
 
-  --font-display:  'Outfit', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-quote:    'Fraunces', Georgia, 'Times New Roman', serif;
+  --grid:rgba(255,255,255,0.09);
+
+  --radius:22px;
+  --radius-sm:14px;
+  --shadow:0 24px 60px -18px rgba(0,0,0,0.85);
+
+  --font-display:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-quote:'Fraunces',Georgia,'Times New Roman',serif;
 }
 
-/* ============================================================
-   2. RESET + PAGE SHELL
-   ============================================================ */
-*,*::before,*::after{ box-sizing:border-box; margin:0; padding:0; }
-
-html{ -webkit-text-size-adjust:100%; }
-
+/* ===== CSS 2. RESET & SHELL ============================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
 body{
-  min-height:100vh;
-  background:var(--bg);
-  color:var(--text);
-  font-family:var(--font-display);
-  font-weight:400;
-  line-height:1.55;
-  -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
-  padding:clamp(16px,4vw,40px) clamp(14px,4vw,24px) 80px;
-  display:flex;
-  justify-content:center;
+  min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:var(--font-display);line-height:1.55;
+  -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  padding:clamp(16px,4vw,40px) clamp(14px,4vw,24px)
+          calc(96px + env(safe-area-inset-bottom));
+  display:flex;justify-content:center;
 }
+.aurora{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform}
+.blob.one{width:52vmax;height:52vmax;background:radial-gradient(circle,#7c3aed 0%,transparent 68%);top:-18vmax;left:-14vmax;animation:drift1 22s ease-in-out infinite alternate}
+.blob.two{width:46vmax;height:46vmax;background:radial-gradient(circle,#db2777 0%,transparent 68%);bottom:-20vmax;right:-12vmax;animation:drift2 26s ease-in-out infinite alternate}
+.blob.three{width:40vmax;height:40vmax;background:radial-gradient(circle,#0284c7 0%,transparent 68%);top:38%;left:52%;animation:drift3 30s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(12vmax,10vmax) scale(1.15)}}
+@keyframes drift2{to{transform:translate(-14vmax,-8vmax) scale(1.1)}}
+@keyframes drift3{to{transform:translate(-16vmax,12vmax) scale(.85)}}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
 
-/* --- The moving "aurora" glow behind everything ---------------
-   Three big blurred circles that drift slowly. This is what makes
-   the page feel alive instead of flat. They sit behind all content
-   (z-index:-1) and ignore mouse clicks (pointer-events:none).
-----------------------------------------------------------------*/
-.aurora{
-  position:fixed; inset:0; z-index:-1;
-  pointer-events:none; overflow:hidden;
-}
-.blob{
-  position:absolute;
-  border-radius:50%;
-  filter:blur(90px);
-  opacity:0.5;
-  will-change:transform;
-}
-.blob.one{
-  width:52vmax; height:52vmax;
-  background:radial-gradient(circle,#7c3aed 0%,transparent 68%);
-  top:-18vmax; left:-14vmax;
-  animation:drift1 22s ease-in-out infinite alternate;
-}
-.blob.two{
-  width:46vmax; height:46vmax;
-  background:radial-gradient(circle,#db2777 0%,transparent 68%);
-  bottom:-20vmax; right:-12vmax;
-  animation:drift2 26s ease-in-out infinite alternate;
-}
-.blob.three{
-  width:40vmax; height:40vmax;
-  background:radial-gradient(circle,#0284c7 0%,transparent 68%);
-  top:38%; left:52%;
-  animation:drift3 30s ease-in-out infinite alternate;
-}
-@keyframes drift1{ to{ transform:translate(12vmax,10vmax) scale(1.15); } }
-@keyframes drift2{ to{ transform:translate(-14vmax,-8vmax) scale(1.1); } }
-@keyframes drift3{ to{ transform:translate(-16vmax,12vmax) scale(0.85); } }
+.app{width:100%;max-width:620px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:var(--shadow)}
+.rise{opacity:0;animation:rise .7s cubic-bezier(.16,1,.3,1) forwards;animation-delay:var(--d,0s)}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
 
-/* A faint grain texture over the top so the gradients don't band */
-body::after{
-  content:""; position:fixed; inset:0; z-index:-1; pointer-events:none;
-  opacity:0.035;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
-}
+.view{display:none}
+.view.active{display:block}
 
-/* ============================================================
-   3. LAYOUT
-   ============================================================ */
-.app{ width:100%; max-width:620px; }
+.section-title{font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--text-faint);margin:26px 4px 12px}
 
-/* Every card in the app shares this frosted-glass look */
-.card{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  box-shadow:var(--shadow);
-}
-
-/* Fade-and-rise entrance. The --d variable staggers each element. */
-.rise{
-  opacity:0;
-  animation:rise .8s cubic-bezier(.16,1,.3,1) forwards;
-  animation-delay:var(--d,0s);
-}
-@keyframes rise{ from{ opacity:0; transform:translateY(22px);} to{ opacity:1; transform:none; } }
-
-/* ============================================================
-   4. HEADER
-   ============================================================ */
-header{ margin-bottom:22px; }
-
-.eyebrow{
-  display:flex; align-items:center; gap:9px;
-  font-size:11px; font-weight:600; letter-spacing:.16em;
-  text-transform:uppercase; color:var(--text-faint);
-  margin-bottom:10px;
-}
-.eyebrow .dot{
-  width:6px; height:6px; border-radius:50%;
-  background:var(--success);
-  box-shadow:0 0 12px var(--success);
-  animation:pulse 2.4s ease-in-out infinite;
-}
-@keyframes pulse{ 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.45;transform:scale(.8);} }
-
-.title-row{
-  display:flex; align-items:flex-start; justify-content:space-between;
-  gap:16px; flex-wrap:wrap;
-}
-h1{
-  font-size:clamp(38px,9vw,60px);
-  font-weight:800; line-height:0.95; letter-spacing:-0.035em;
+/* ===== CSS 3. HEADER ===================================== */
+.eyebrow{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);margin-bottom:10px}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--success);
+  box-shadow:0 0 12px var(--success);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+.title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{font-size:clamp(36px,8.5vw,56px);font-weight:800;line-height:.95;letter-spacing:-.035em;
   background:linear-gradient(115deg,#fff 10%,var(--accent) 55%,var(--accent-2) 95%);
-  -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color:transparent; color:transparent;
-}
-.subtitle{ color:var(--text-soft); font-size:15px; margin-top:8px; font-weight:300; }
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.subtitle{color:var(--text-soft);font-size:15px;margin-top:8px;font-weight:300}
+.streak-pill{display:flex;align-items:center;gap:9px;padding:9px 15px;border-radius:100px;
+  background:var(--surface-hi);border:1px solid var(--border);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);white-space:nowrap;flex-shrink:0}
+.streak-pill .flame{font-size:17px;filter:drop-shadow(0 0 8px rgba(251,146,60,.8))}
+.streak-pill b{font-size:17px;font-weight:700}
+.streak-pill span{font-size:12px;color:var(--text-soft)}
 
-/* Streak badge (top right) */
-.streak{
-  display:flex; align-items:center; gap:9px;
-  padding:9px 15px; border-radius:100px;
-  background:var(--surface-hi); border:1px solid var(--border);
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  white-space:nowrap; flex-shrink:0;
-}
-.streak .flame{ font-size:17px; filter:drop-shadow(0 0 8px rgba(251,146,60,.8)); }
-.streak b{ font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; }
-.streak span{ font-size:12px; color:var(--text-soft); }
+/* ===== CSS 4. QUOTE ====================================== */
+.quote-card{position:relative;overflow:hidden;padding:30px 26px 24px;margin:22px 0}
+.quote-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--accent-2),var(--accent-3),transparent);opacity:.9}
+.quote-card::after{content:'"';position:absolute;top:-26px;right:14px;font-family:var(--font-quote);
+  font-size:170px;line-height:1;color:rgba(255,255,255,.045);pointer-events:none;user-select:none}
+#quote{font-family:var(--font-quote);font-size:clamp(19px,4.4vw,26px);line-height:1.36;
+  letter-spacing:-.015em;position:relative;z-index:1}
+#author{margin-top:15px;font-size:12px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent)}
+.quote-swap{animation:swap .5s ease}
+@keyframes swap{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.ghost-btn{background:none;border:1px solid var(--border);color:var(--text-soft);
+  font-family:inherit;font-size:12px;font-weight:500;padding:7px 14px;border-radius:100px;
+  cursor:pointer;transition:all .25s ease}
+.ghost-btn:hover{border-color:var(--border-hi);color:var(--text);background:var(--surface-hi)}
+.newquote{margin-top:16px}
 
-/* ============================================================
-   5. QUOTE CARD
-   ============================================================ */
-.quote-card{
-  position:relative; overflow:hidden;
-  padding:32px 28px 26px;
-  margin-bottom:22px;
-}
-/* Bright gradient hairline across the top edge of the card */
-.quote-card::before{
-  content:""; position:absolute; top:0; left:0; right:0; height:2px;
-  background:linear-gradient(90deg,transparent,var(--accent),var(--accent-2),var(--accent-3),transparent);
-  opacity:.9;
-}
-/* Giant decorative quotation mark */
-.quote-card::after{
-  content:'"';
-  position:absolute; top:-26px; right:14px;
-  font-family:var(--font-quote); font-size:170px; line-height:1;
-  color:rgba(255,255,255,0.045); pointer-events:none; user-select:none;
-}
-#quote{
-  font-family:var(--font-quote);
-  font-size:clamp(20px,4.6vw,27px);
-  font-weight:400; line-height:1.36; letter-spacing:-0.015em;
-  position:relative; z-index:1;
-}
-#author{
-  margin-top:16px; font-size:12px; font-weight:600;
-  letter-spacing:.14em; text-transform:uppercase; color:var(--accent);
-}
-/* Applied briefly when the quote is re-rolled, for a soft swap */
-.quote-swap{ animation:swap .5s ease; }
-@keyframes swap{ from{opacity:0; transform:translateY(10px) } to{opacity:1; transform:none} }
-
-.newquote{
-  margin-top:18px;
-  background:none; border:1px solid var(--border);
-  color:var(--text-soft); font-family:inherit;
-  font-size:12px; font-weight:500;
-  padding:7px 14px; border-radius:100px; cursor:pointer;
-  transition:all .25s ease;
-}
-.newquote:hover{ border-color:var(--border-hi); color:var(--text); background:var(--surface-hi); }
-
-/* ============================================================
-   6. PROGRESS RING
-   ============================================================ */
-.progress-card{
-  padding:24px 26px;
-  margin-bottom:22px;
-  display:flex; align-items:center; gap:22px;
-}
-.ring{ position:relative; width:96px; height:96px; flex-shrink:0; }
-.ring svg{ transform:rotate(-90deg); display:block; }
-.ring .track{ fill:none; stroke:rgba(255,255,255,0.08); stroke-width:9; }
-.ring .fill{
-  fill:none; stroke:url(#ringGrad); stroke-width:9; stroke-linecap:round;
-  /* stroke-dasharray + stroke-dashoffset are set by JavaScript */
+/* ===== CSS 5. RING ======================================= */
+.progress-card{padding:22px 24px;margin-bottom:20px;display:flex;align-items:center;gap:20px}
+.ring{position:relative;width:92px;height:92px;flex-shrink:0}
+.ring svg{transform:rotate(-90deg);display:block}
+.ring .track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:9}
+.ring .fill{fill:none;stroke:url(#ringGrad);stroke-width:9;stroke-linecap:round;
   transition:stroke-dashoffset .9s cubic-bezier(.16,1,.3,1);
-  filter:drop-shadow(0 0 8px rgba(167,139,250,.65));
-}
-.ring-label{
-  position:absolute; inset:0;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-}
-.ring-label b{ font-size:24px; font-weight:700; letter-spacing:-0.03em; font-variant-numeric:tabular-nums; }
-.ring-label span{ font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:var(--text-faint); }
+  filter:drop-shadow(0 0 8px rgba(167,139,250,.65))}
+.ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-label b{font-size:23px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ring-label span{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}
+.progress-text h2{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.progress-text p{font-size:14px;color:var(--text-soft);font-weight:300}
 
-.progress-text h2{ font-size:19px; font-weight:600; letter-spacing:-0.02em; margin-bottom:5px; }
-.progress-text p{ font-size:14px; color:var(--text-soft); font-weight:300; }
+/* ===== CSS 6. CHECKLIST ================================== */
+.list-card{padding:8px;margin-bottom:18px}
+.exercise{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius-sm);
+  position:relative;transition:background .25s ease;-webkit-tap-highlight-color:transparent}
+.exercise:hover{background:var(--surface-hi)}
+.exercise:not(:last-child)::after{content:"";position:absolute;left:60px;right:14px;bottom:0;
+  height:1px;background:var(--border)}
+.tick{display:flex;align-items:center;gap:14px;flex:1;min-width:0;cursor:pointer}
+.exercise input{position:absolute;opacity:0;pointer-events:none}
+.box{width:30px;height:30px;flex-shrink:0;border:2px solid var(--border-hi);border-radius:10px;
+  display:grid;place-items:center;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+.box svg{width:17px;height:17px}
+.box svg path{fill:none;stroke:#08080f;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .35s ease .08s}
+.info{flex:1;min-width:0;display:flex;flex-direction:column}
+.info .name{font-size:16px;font-weight:500;letter-spacing:-.01em;transition:color .3s ease}
+.info .detail{font-size:13px;color:var(--text-faint);font-weight:300;margin-top:2px;transition:color .3s ease}
+.exercise input:checked + .box{background:linear-gradient(135deg,var(--success),#22d3ee);
+  border-color:transparent;box-shadow:0 0 22px rgba(74,222,128,.55);animation:pop .42s cubic-bezier(.34,1.56,.64,1)}
+.exercise input:checked + .box svg path{stroke-dashoffset:0}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.32)}100%{transform:scale(1)}}
+.exercise input:checked ~ .info .name{color:var(--text-faint);text-decoration:line-through;
+  text-decoration-color:rgba(74,222,128,.7);text-decoration-thickness:2px}
+.exercise input:checked ~ .info .detail{color:rgba(244,243,255,.2)}
+.exercise input:focus-visible + .box{outline:2px solid var(--accent);outline-offset:3px}
+.timer-chip{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;
+  background:var(--surface-hi);border:1px solid var(--border);color:var(--text-soft);
+  font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:all .22s ease}
+.timer-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(167,139,250,.1)}
+.reset{display:block;margin:0 auto;background:none;border:none;color:var(--text-faint);
+  font-family:inherit;font-size:13px;padding:10px 18px;cursor:pointer;border-radius:100px;
+  transition:color .25s ease,background .25s ease}
+.reset:hover{color:var(--text-soft);background:var(--surface)}
 
-/* ============================================================
-   7. THE CHECKLIST
-   ============================================================ */
-.list-card{ padding:10px; margin-bottom:20px; }
+/* ===== CSS 7. TIMER OVERLAY ============================== */
+#timerOverlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:24px;
+  background:rgba(8,8,15,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s}
+#timerOverlay.show{opacity:1;visibility:visible}
+.timer-box{text-align:center;width:100%;max-width:340px}
+.timer-name{font-size:20px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.timer-detail{font-size:13px;color:var(--text-faint);margin-bottom:26px}
+.timer-ring{position:relative;width:min(260px,72vw);aspect-ratio:1;margin:0 auto 28px}
+.timer-ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.timer-ring .track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:8}
+.timer-ring .fill{fill:none;stroke:url(#timerGrad);stroke-width:8;stroke-linecap:round;
+  transition:stroke-dashoffset .35s linear;filter:drop-shadow(0 0 14px rgba(167,139,250,.6))}
+.timer-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(52px,15vw,68px);font-weight:300;letter-spacing:-.04em;
+  font-variant-numeric:tabular-nums}
+.timer-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{font-family:inherit;font-size:15px;font-weight:600;padding:13px 30px;border-radius:100px;
+  cursor:pointer;border:none;transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.btn-primary{background:linear-gradient(115deg,var(--accent),var(--accent-2));color:#fff;
+  box-shadow:0 10px 30px -8px rgba(167,139,250,.7)}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-quiet{background:var(--surface-hi);border:1px solid var(--border);color:var(--text-soft)}
+.btn-quiet:hover{color:var(--text);border-color:var(--border-hi)}
 
-.exercise{
-  display:flex; align-items:center; gap:16px;
-  padding:16px 16px;
-  border-radius:var(--radius-sm);
-  cursor:pointer;
-  position:relative;
-  transition:background .25s ease, transform .18s ease;
-  -webkit-tap-highlight-color:transparent;
-}
-.exercise:hover{ background:var(--surface-hi); }
-.exercise:active{ transform:scale(0.985); }
-/* Thin divider between rows, but not after the last one */
-.exercise:not(:last-child)::after{
-  content:""; position:absolute; left:64px; right:16px; bottom:0;
-  height:1px; background:var(--border);
-}
+/* ===== CSS 8. PROGRESS TAB =============================== */
+.hero-card{padding:30px 26px;text-align:center;margin-bottom:16px}
+.hero-card .hero-num{font-size:76px;font-weight:800;line-height:1;letter-spacing:-.05em;
+  background:linear-gradient(115deg,#fff,var(--accent) 60%,var(--accent-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.hero-card .hero-label{font-size:13px;color:var(--text-soft);margin-top:8px;font-weight:300}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+.stat{padding:18px 12px;text-align:center}
+.stat b{display:block;font-size:26px;font-weight:600;letter-spacing:-.03em}
+.stat span{display:block;font-size:11px;color:var(--text-faint);margin-top:4px;
+  letter-spacing:.06em;line-height:1.3}
+.chart-card{padding:22px 20px;margin-bottom:8px}
+.chart-head{margin-bottom:18px;padding:0 4px}
+.chart-head h3{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.chart-head p{font-size:12.5px;color:var(--text-faint);font-weight:300;margin-top:2px}
+/* heatmap */
+.heat-wrap{overflow-x:auto;padding:0 4px 4px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:4px;min-width:min-content}
+.heat-cell{width:14px;height:14px;border-radius:3.5px;background:var(--heat-0);cursor:default;
+  transition:transform .15s ease}
+.heat-cell:hover{transform:scale(1.35)}
+.heat-cell.today{box-shadow:0 0 0 2px var(--bg),0 0 0 3.5px var(--border-hi)}
+.heat-legend{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:14px;
+  font-size:11px;color:var(--text-faint);padding:0 4px}
+.heat-legend .swatch{width:12px;height:12px;border-radius:3px}
+/* bars */
+.bars{width:100%;height:auto;display:block;overflow:visible}
+.bars .grid-line{stroke:var(--grid);stroke-width:1}
+.bars .bar{fill:var(--accent);transition:opacity .2s ease}
+.bars .bar-hit{fill:transparent;cursor:default}
+.bars g:hover .bar{opacity:.75}
+.bars .tick-text{fill:rgba(244,243,255,.34);font-size:10px;font-family:var(--font-display);
+  font-variant-numeric:tabular-nums}
+.bars .val-text{fill:rgba(244,243,255,.62);font-size:11px;font-weight:600;font-family:var(--font-display)}
+#chartTip{position:fixed;z-index:90;pointer-events:none;opacity:0;transform:translate(-50%,-120%);
+  padding:8px 12px;border-radius:10px;background:rgba(20,20,32,.96);border:1px solid var(--border-hi);
+  font-size:12.5px;white-space:nowrap;transition:opacity .15s ease;box-shadow:var(--shadow)}
+#chartTip.show{opacity:1}
+#chartTip b{color:var(--accent)}
+.empty-note{text-align:center;color:var(--text-faint);font-size:13.5px;font-weight:300;
+  padding:26px 20px;line-height:1.6}
 
-/* --- The custom checkbox ------------------------------------
-   The real <input> is hidden (see .exercise input) and this box
-   is what people actually see. The SVG check inside is "drawn"
-   using stroke-dasharray when the item becomes complete.
---------------------------------------------------------------*/
-.exercise input{ position:absolute; opacity:0; pointer-events:none; }
+/* ===== CSS 9. ROUTINE TAB ================================ */
+.edit-row{display:flex;align-items:center;gap:12px;padding:13px 14px;position:relative}
+.edit-row:not(:last-child)::after{content:"";position:absolute;left:14px;right:14px;bottom:0;
+  height:1px;background:var(--border)}
+.edit-row .info{cursor:default}
+.row-actions{display:flex;gap:4px;flex-shrink:0}
+.icon-btn{width:32px;height:32px;display:grid;place-items:center;border-radius:9px;
+  background:none;border:1px solid transparent;color:var(--text-faint);cursor:pointer;
+  font-size:14px;font-family:inherit;transition:all .2s ease}
+.icon-btn:hover{background:var(--surface-hi);border-color:var(--border);color:var(--text)}
+.icon-btn.del:hover{color:var(--danger);border-color:rgba(251,113,133,.4)}
+.icon-btn:disabled{opacity:.25;cursor:default}
+.icon-btn:disabled:hover{background:none;border-color:transparent;color:var(--text-faint)}
+.form-card{padding:22px;margin-top:16px}
+.form-card h3{font-size:15px;font-weight:600;margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-faint);margin-bottom:6px;font-weight:600}
+.field input{width:100%;padding:12px 14px;border-radius:12px;background:rgba(0,0,0,.28);
+  border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:15px;
+  transition:border-color .2s ease}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field input::placeholder{color:rgba(244,243,255,.24)}
+.field .hint{font-size:11.5px;color:var(--text-faint);margin-top:5px;font-weight:300}
+.form-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
 
-.box{
-  width:30px; height:30px; flex-shrink:0;
-  border:2px solid var(--border-hi); border-radius:10px;
-  display:grid; place-items:center;
-  transition:all .3s cubic-bezier(.34,1.56,.64,1);
-}
-.box svg{ width:17px; height:17px; }
-.box svg path{
-  fill:none; stroke:#08080f; stroke-width:3.4;
-  stroke-linecap:round; stroke-linejoin:round;
-  stroke-dasharray:24; stroke-dashoffset:24;   /* hidden by default */
-  transition:stroke-dashoffset .35s ease .08s;
-}
-
-.exercise .info{ flex:1; min-width:0; display:flex; flex-direction:column; }
-.exercise .name{
-  font-size:16px; font-weight:500; letter-spacing:-0.01em;
-  transition:color .3s ease;
-}
-.exercise .reps{
-  font-size:13px; color:var(--text-faint); font-weight:300; margin-top:2px;
-  transition:color .3s ease;
-}
-
-/* --- Completed state ---------------------------------------
-   :checked + .box  means "the .box element right after a checked
-   input". This is how we style without any JavaScript classes.
---------------------------------------------------------------*/
-.exercise input:checked + .box{
-  background:linear-gradient(135deg,var(--success),#22d3ee);
-  border-color:transparent;
-  box-shadow:0 0 22px rgba(74,222,128,.55);
-  animation:pop .42s cubic-bezier(.34,1.56,.64,1);
-}
-.exercise input:checked + .box svg path{ stroke-dashoffset:0; }
-@keyframes pop{ 0%{transform:scale(1)} 45%{transform:scale(1.32)} 100%{transform:scale(1)} }
-
-.exercise input:checked ~ .info .name{
-  color:var(--text-faint);
-  text-decoration:line-through;
-  text-decoration-color:rgba(74,222,128,.7);
-  text-decoration-thickness:2px;
-}
-.exercise input:checked ~ .info .reps{ color:rgba(244,243,255,0.2); }
-
-/* Keyboard focus outline — important for accessibility */
-.exercise input:focus-visible + .box{ outline:2px solid var(--accent); outline-offset:3px; }
-
-/* ============================================================
-   8. RESET BUTTON
-   ============================================================ */
-.reset{
-  display:block; margin:0 auto;
-  background:none; border:none;
-  color:var(--text-faint); font-family:inherit; font-size:13px;
-  padding:10px 18px; cursor:pointer; border-radius:100px;
-  transition:color .25s ease, background .25s ease;
-}
-.reset:hover{ color:var(--text-soft); background:var(--surface); }
-
-/* ============================================================
-   9. CELEBRATION OVERLAY (the "GREAT JOB" screen)
-   ============================================================ */
-#celebration{
-  position:fixed; inset:0; z-index:60;
-  display:grid; place-items:center;
-  padding:24px;
-  background:rgba(8,8,15,0.72);
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  opacity:0; visibility:hidden;
-  transition:opacity .45s ease, visibility .45s;
-}
-#celebration.show{ opacity:1; visibility:visible; }
-
-.celebrate-box{
-  text-align:center; max-width:440px;
-  padding:44px 34px;
-  border-radius:30px;
-  background:var(--surface);
-  border:1px solid var(--border-hi);
-  box-shadow:var(--shadow);
-  transform:scale(.86) translateY(20px);
-  transition:transform .6s cubic-bezier(.16,1,.3,1);
-}
-#celebration.show .celebrate-box{ transform:none; }
-
-.celebrate-box .emoji{
-  font-size:64px; line-height:1; margin-bottom:18px; display:block;
-  animation:bounce 1.4s ease-in-out infinite;
-}
-@keyframes bounce{ 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-14px) rotate(4deg)} }
-
-.celebrate-box h2{
-  font-size:clamp(34px,8vw,48px); font-weight:800; letter-spacing:-0.04em;
-  line-height:1.05; margin-bottom:14px;
+/* ===== CSS 10. CELEBRATION =============================== */
+#celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px;
+  background:rgba(8,8,15,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s}
+#celebration.show{opacity:1;visibility:visible}
+.celebrate-box{text-align:center;max-width:440px;padding:44px 34px;border-radius:30px;
+  background:var(--surface);border:1px solid var(--border-hi);box-shadow:var(--shadow);
+  transform:scale(.86) translateY(20px);transition:transform .6s cubic-bezier(.16,1,.3,1)}
+#celebration.show .celebrate-box{transform:none}
+.celebrate-box .emoji{font-size:64px;line-height:1;margin-bottom:18px;display:block;
+  animation:bounce 1.4s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-14px) rotate(4deg)}}
+.celebrate-box h2{font-size:clamp(32px,7.5vw,46px);font-weight:800;letter-spacing:-.04em;
+  line-height:1.05;margin-bottom:14px;
   background:linear-gradient(115deg,var(--success),var(--accent-3),var(--accent));
-  -webkit-background-clip:text; background-clip:text;
-  -webkit-text-fill-color:transparent; color:transparent;
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.celebrate-box p{color:var(--text-soft);font-size:16px;font-weight:300;margin-bottom:26px}
+#confetti{position:fixed;inset:0;z-index:100;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));z-index:70;
+  transform:translate(-50%,26px);padding:11px 24px;border-radius:100px;background:rgba(20,20,32,.92);
+  border:1px solid var(--border-hi);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  font-size:14px;font-weight:500;opacity:0;pointer-events:none;white-space:nowrap;
+  transition:opacity .3s ease,transform .45s cubic-bezier(.16,1,.3,1)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ===== CSS 11. TAB BAR =================================== */
+.tabbar{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));
+  transform:translateX(-50%);z-index:50;display:flex;gap:4px;padding:6px;border-radius:100px;
+  background:rgba(16,16,26,.86);border:1px solid var(--border);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow)}
+.tabbar button{display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:100px;
+  background:none;border:none;color:var(--text-faint);font-family:inherit;font-size:13.5px;
+  font-weight:500;cursor:pointer;transition:all .25s ease;white-space:nowrap}
+.tabbar button:hover{color:var(--text-soft)}
+.tabbar button.active{background:linear-gradient(115deg,var(--accent),var(--accent-2));color:#fff;
+  box-shadow:0 6px 20px -6px rgba(167,139,250,.75)}
+.tabbar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+footer{text-align:center;margin-top:30px;font-size:12px;color:var(--text-faint)}
+
+@media (max-width:400px){
+  .tabbar button{padding:10px 13px;font-size:12.5px}
+  .stat b{font-size:22px}
 }
-.celebrate-box p{ color:var(--text-soft); font-size:16px; font-weight:300; margin-bottom:26px; }
-
-.celebrate-box button{
-  background:linear-gradient(115deg,var(--accent),var(--accent-2));
-  border:none; color:#fff; font-family:inherit;
-  font-size:15px; font-weight:600;
-  padding:13px 34px; border-radius:100px; cursor:pointer;
-  transition:transform .2s ease, box-shadow .2s ease;
-  box-shadow:0 10px 30px -8px rgba(167,139,250,.7);
-}
-.celebrate-box button:hover{ transform:translateY(-2px); box-shadow:0 16px 40px -8px rgba(167,139,250,.85); }
-
-/* The confetti canvas floats above everything and ignores clicks */
-#confetti{
-  position:fixed; inset:0; z-index:100;
-  pointer-events:none;
-}
-
-/* Small "nice one!" toast that pops when you tick a single item */
-#toast{
-  position:fixed; left:50%; bottom:34px; z-index:70;
-  transform:translate(-50%,26px);
-  padding:11px 24px; border-radius:100px;
-  background:rgba(20,20,32,0.9);
-  border:1px solid var(--border-hi);
-  backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-  font-size:14px; font-weight:500;
-  opacity:0; pointer-events:none;
-  transition:opacity .3s ease, transform .45s cubic-bezier(.16,1,.3,1);
-  white-space:nowrap;
-}
-#toast.show{ opacity:1; transform:translate(-50%,0); }
-
-footer{ text-align:center; margin-top:34px; font-size:12px; color:var(--text-faint); }
-
-/* Respect people who've asked their device to reduce motion */
 @media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{ animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;
+    transition-duration:.01ms !important}
 }
 </style>
 </head>
 
 <body>
-
-<!-- The three drifting glow blobs -->
 <div class="aurora" aria-hidden="true">
-  <div class="blob one"></div>
-  <div class="blob two"></div>
-  <div class="blob three"></div>
+  <div class="blob one"></div><div class="blob two"></div><div class="blob three"></div>
 </div>
-
-<!-- Confetti is drawn onto this canvas -->
 <canvas id="confetti" aria-hidden="true"></canvas>
+
+<!-- Gradients used by the two rings, defined once -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#f472b6"/><stop offset="100%" stop-color="#38bdf8"/>
+  </linearGradient>
+  <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#f472b6"/>
+  </linearGradient>
+</defs></svg>
 
 <main class="app">
 
-  <header class="rise" style="--d:.05s">
-    <div class="eyebrow"><span class="dot"></span><span id="today">Today</span></div>
-    <div class="title-row">
-      <div>
-        <h1>Rise.</h1>
-        <p class="subtitle">Your workout, at home, today.</p>
+  <!-- ============ TAB 1 · TODAY ============ -->
+  <section class="view active" id="view-today">
+    <header class="rise" style="--d:.05s">
+      <div class="eyebrow"><span class="dot"></span><span id="today">Today</span></div>
+      <div class="title-row">
+        <div><h1>Rise.</h1><p class="subtitle">Your workout, at home, today.</p></div>
+        <div class="streak-pill"><span class="flame">🔥</span><b id="streakCount">0</b><span>day streak</span></div>
       </div>
-      <div class="streak" title="Days completed in a row">
-        <span class="flame">🔥</span>
-        <b id="streakCount">0</b>
-        <span>day streak</span>
-      </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- QUOTE -->
-  <section class="card quote-card rise" style="--d:.15s">
-    <p id="quote">Loading…</p>
-    <p id="author">—</p>
-    <button class="newquote" id="newQuote">↻ Another one</button>
+    <section class="card quote-card rise" style="--d:.15s">
+      <p id="quote">Loading…</p>
+      <p id="author">—</p>
+      <button class="ghost-btn newquote" id="newQuote">↻ Another one</button>
+    </section>
+
+    <section class="card progress-card rise" style="--d:.25s">
+      <div class="ring">
+        <svg width="92" height="92" viewBox="0 0 92 92">
+          <circle class="track" cx="46" cy="46" r="38"/>
+          <circle class="fill" cx="46" cy="46" r="38" id="ringFill"/>
+        </svg>
+        <div class="ring-label"><b id="pct">0%</b><span>done</span></div>
+      </div>
+      <div class="progress-text">
+        <h2 id="progressTitle">Let's get moving</h2>
+        <p id="progressSub">0 of 8 exercises complete</p>
+      </div>
+    </section>
+
+    <section class="card list-card rise" style="--d:.35s" id="list"></section>
+    <button class="reset" id="reset">Reset today's workout</button>
+    <footer>Move a little every day.</footer>
   </section>
 
-  <!-- PROGRESS -->
-  <section class="card progress-card rise" style="--d:.25s">
-    <div class="ring">
-      <svg width="96" height="96" viewBox="0 0 96 96">
-        <defs>
-          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stop-color="#a78bfa"/>
-            <stop offset="50%"  stop-color="#f472b6"/>
-            <stop offset="100%" stop-color="#38bdf8"/>
-          </linearGradient>
-        </defs>
-        <circle class="track" cx="48" cy="48" r="40"/>
-        <circle class="fill"  cx="48" cy="48" r="40" id="ringFill"/>
-      </svg>
-      <div class="ring-label">
-        <b id="pct">0%</b>
-        <span>done</span>
+  <!-- ============ TAB 2 · PROGRESS ============ -->
+  <section class="view" id="view-progress">
+    <header style="margin-bottom:20px">
+      <div class="eyebrow"><span class="dot"></span><span>Your progress</span></div>
+      <h1 style="font-size:clamp(30px,7vw,42px)">Progress.</h1>
+    </header>
+
+    <section class="card hero-card">
+      <div class="hero-num" id="heroStreak">0</div>
+      <div class="hero-label" id="heroLabel">day streak — finish today to start one</div>
+    </section>
+
+    <div class="stat-grid">
+      <div class="card stat"><b id="statBest">0</b><span>BEST STREAK</span></div>
+      <div class="card stat"><b id="statTotal">0</b><span>WORKOUTS DONE</span></div>
+      <div class="card stat"><b id="statMonth">0</b><span>THIS MONTH</span></div>
+    </div>
+
+    <div class="section-title">Last 12 weeks</div>
+    <section class="card chart-card">
+      <div class="chart-head">
+        <h3>Daily completion</h3>
+        <p>Each square is one day. Brighter means more of that day's workout finished.</p>
       </div>
-    </div>
-    <div class="progress-text">
-      <h2 id="progressTitle">Let's get moving</h2>
-      <p id="progressSub">0 of 8 exercises complete</p>
-    </div>
+      <div class="heat-wrap"><div class="heat" id="heat"></div></div>
+      <div class="heat-legend">
+        <span>Less</span>
+        <span class="swatch" style="background:var(--heat-0)"></span>
+        <span class="swatch" style="background:var(--heat-1)"></span>
+        <span class="swatch" style="background:var(--heat-2)"></span>
+        <span class="swatch" style="background:var(--heat-3)"></span>
+        <span class="swatch" style="background:var(--heat-4)"></span>
+        <span>More</span>
+      </div>
+    </section>
+
+    <div class="section-title">Last 8 weeks</div>
+    <section class="card chart-card">
+      <div class="chart-head">
+        <h3>Workouts finished per week</h3>
+        <p>A week counts a day only when every exercise was ticked off.</p>
+      </div>
+      <div id="barsWrap"></div>
+    </section>
+    <footer>Consistency beats intensity.</footer>
   </section>
 
-  <!-- CHECKLIST — the rows are built by JavaScript from the WORKOUT list below -->
-  <section class="card list-card rise" style="--d:.35s" id="list"></section>
+  <!-- ============ TAB 3 · ROUTINE ============ -->
+  <section class="view" id="view-routine">
+    <header style="margin-bottom:20px">
+      <div class="eyebrow"><span class="dot"></span><span>Build your own</span></div>
+      <h1 style="font-size:clamp(30px,7vw,42px)">Routine.</h1>
+      <p class="subtitle">Add, remove and reorder your exercises. Changes apply to today.</p>
+    </header>
 
-  <button class="reset" id="reset">Reset today's workout</button>
+    <section class="card list-card" id="editList"></section>
 
-  <footer>Built by Alex · Move a little every day.</footer>
+    <section class="card form-card">
+      <h3 id="formTitle">Add an exercise</h3>
+      <div class="field">
+        <label for="fName">Exercise name</label>
+        <input id="fName" type="text" placeholder="e.g. Burpees" maxlength="40">
+      </div>
+      <div class="field">
+        <label for="fDetail">Sets / reps</label>
+        <input id="fDetail" type="text" placeholder="e.g. 3 sets × 10" maxlength="40">
+      </div>
+      <div class="field">
+        <label for="fSeconds">Timer length (optional)</label>
+        <input id="fSeconds" type="number" min="5" max="3600" step="5" placeholder="e.g. 45">
+        <p class="hint">Seconds. Leave blank for exercises you count instead of time. Adding a number puts a ⏱ button on the exercise.</p>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="saveExercise">Add exercise</button>
+        <button class="btn btn-quiet" id="cancelEdit" style="display:none">Cancel</button>
+      </div>
+    </section>
+
+    <button class="reset" id="restoreDefault" style="margin-top:18px">Restore the starter routine</button>
+    <footer>Your routine is saved on this device.</footer>
+  </section>
 </main>
 
-<!-- CELEBRATION SCREEN -->
+<!-- ============ OVERLAYS ============ -->
+<div id="timerOverlay">
+  <div class="timer-box">
+    <div class="timer-name" id="timerName">Plank Hold</div>
+    <div class="timer-detail" id="timerDetail">3 sets × 45 seconds</div>
+    <div class="timer-ring">
+      <svg viewBox="0 0 200 200">
+        <circle class="track" cx="100" cy="100" r="92"/>
+        <circle class="fill" cx="100" cy="100" r="92" id="timerFill"/>
+      </svg>
+      <div class="timer-count" id="timerCount">0:45</div>
+    </div>
+    <div class="timer-actions">
+      <button class="btn btn-primary" id="timerToggle">Start</button>
+      <button class="btn btn-quiet" id="timerClose">Close</button>
+    </div>
+  </div>
+</div>
+
 <div id="celebration">
   <div class="celebrate-box">
     <span class="emoji">🎉</span>
     <h2 id="celebrateTitle">GREAT JOB!</h2>
     <p id="celebrateMsg">You finished every exercise today. That's a win.</p>
-    <button id="closeCelebrate">Keep it going</button>
+    <button class="btn btn-primary" id="closeCelebrate">Keep it going</button>
   </div>
 </div>
 
 <div id="toast"></div>
+<div id="chartTip"></div>
+
+<nav class="tabbar">
+  <button class="active" data-view="today">
+    <svg viewBox="0 0 24 24"><path d="M4 12.5 9 17.5 20 6.5"/></svg>Today</button>
+  <button data-view="progress">
+    <svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progress</button>
+  <button data-view="routine">
+    <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h9"/></svg>Routine</button>
+</nav>
 
 <script>
 /* ============================================================
-   PART A — YOUR CONTENT
-   This is the part you'll edit most. Add, remove, or reword
-   anything here and the app updates itself.
+   JS A — YOUR CONTENT
    ============================================================ */
 
-// Each line is one row in the checklist.
-// To add an exercise, copy a line and change the words.
-const WORKOUT = [
-  { name: "Jumping Jacks",      reps: "60 seconds · warm up" },
-  { name: "Push-Ups",           reps: "3 sets × 12" },
-  { name: "Bodyweight Squats",  reps: "3 sets × 15" },
-  { name: "Plank Hold",         reps: "3 sets × 45 seconds" },
-  { name: "Lunges",             reps: "3 sets × 10 each leg" },
-  { name: "Glute Bridges",      reps: "3 sets × 15" },
-  { name: "Mountain Climbers",  reps: "3 sets × 30 seconds" },
-  { name: "Stretch & Cool Down",reps: "5 minutes" }
+// The routine people start with. They can change it in the Routine tab,
+// and their version is saved on their own device.
+const DEFAULT_ROUTINE = [
+  { id:"e1", name:"Jumping Jacks",       detail:"60 seconds · warm up",  seconds:60  },
+  { id:"e2", name:"Push-Ups",            detail:"3 sets × 12",           seconds:null },
+  { id:"e3", name:"Bodyweight Squats",   detail:"3 sets × 15",           seconds:null },
+  { id:"e4", name:"Plank Hold",          detail:"3 sets × 45 seconds",   seconds:45  },
+  { id:"e5", name:"Lunges",              detail:"3 sets × 10 each leg",  seconds:null },
+  { id:"e6", name:"Glute Bridges",       detail:"3 sets × 15",           seconds:null },
+  { id:"e7", name:"Mountain Climbers",   detail:"3 sets × 30 seconds",   seconds:30  },
+  { id:"e8", name:"Stretch & Cool Down", detail:"5 minutes",             seconds:300 }
 ];
 
-// The pool the daily quote is picked from. Add your own freely.
 const QUOTES = [
-  { t: "The body achieves what the mind believes.", a: "Napoleon Hill" },
-  { t: "It never gets easier. You just get stronger.", a: "Unknown" },
-  { t: "Discipline is choosing between what you want now and what you want most.", a: "Abraham Lincoln" },
-  { t: "You don't have to be extreme, just consistent.", a: "Unknown" },
-  { t: "The only bad workout is the one that didn't happen.", a: "Unknown" },
-  { t: "Take care of your body. It's the only place you have to live.", a: "Jim Rohn" },
-  { t: "Small daily improvements are the key to staggering long-term results.", a: "Unknown" },
-  { t: "Motivation gets you started. Habit keeps you going.", a: "Jim Ryun" },
-  { t: "Your only limit is you.", a: "Unknown" },
-  { t: "Strength does not come from what you can do. It comes from overcoming what you thought you couldn't.", a: "Rikki Rogers" },
-  { t: "Don't wish for it. Work for it.", a: "Unknown" },
-  { t: "A one hour workout is 4% of your day. No excuses.", a: "Unknown" },
-  { t: "Success is the sum of small efforts repeated day in and day out.", a: "Robert Collier" },
-  { t: "The hardest lift of all is lifting yourself off the couch.", a: "Unknown" },
-  { t: "Sweat is just fat crying.", a: "Unknown" },
-  { t: "You are one workout away from a good mood.", a: "Unknown" },
-  { t: "Fall in love with taking care of yourself.", a: "Unknown" },
-  { t: "The difference between try and triumph is a little umph.", a: "Marvin Phillips" },
-  { t: "Nothing will work unless you do.", a: "Maya Angelou" },
-  { t: "Push yourself, because no one else is going to do it for you.", a: "Unknown" },
-  { t: "Energy and persistence conquer all things.", a: "Benjamin Franklin" },
-  { t: "Do something today that your future self will thank you for.", a: "Sean Patrick Flanery" },
-  { t: "It's going to be a journey. It's not a sprint to get in shape.", a: "Kerri Walsh Jennings" },
-  { t: "The pain you feel today will be the strength you feel tomorrow.", a: "Unknown" },
-  { t: "You miss 100% of the shots you don't take.", a: "Wayne Gretzky" },
-  { t: "Wake up with determination. Go to bed with satisfaction.", a: "Unknown" },
-  { t: "Good things come to those who sweat.", a: "Unknown" },
-  { t: "If it doesn't challenge you, it won't change you.", a: "Fred DeVito" },
-  { t: "Fitness is not about being better than someone else. It's about being better than you used to be.", a: "Unknown" },
-  { t: "The clock is ticking. Are you becoming the person you want to be?", a: "Greg Plitt" },
-  { t: "We are what we repeatedly do. Excellence, then, is not an act, but a habit.", a: "Will Durant" },
-  { t: "Believe you can and you're halfway there.", a: "Theodore Roosevelt" },
-  { t: "Start where you are. Use what you have. Do what you can.", a: "Arthur Ashe" },
-  { t: "The groundwork for all happiness is good health.", a: "Leigh Hunt" },
-  { t: "Every workout is progress, no matter how small.", a: "Unknown" },
-  { t: "Rome wasn't built in a day, but they worked on it every single day.", a: "Unknown" },
-  { t: "Your body can stand almost anything. It's your mind you have to convince.", a: "Unknown" },
-  { t: "Sore today, strong tomorrow.", a: "Unknown" },
-  { t: "Change happens at the end of your comfort zone.", a: "Roy T. Bennett" },
-  { t: "Don't stop when you're tired. Stop when you're done.", a: "Unknown" }
+  { t:"The body achieves what the mind believes.", a:"Napoleon Hill" },
+  { t:"It never gets easier. You just get stronger.", a:"Unknown" },
+  { t:"Discipline is choosing between what you want now and what you want most.", a:"Abraham Lincoln" },
+  { t:"You don't have to be extreme, just consistent.", a:"Unknown" },
+  { t:"The only bad workout is the one that didn't happen.", a:"Unknown" },
+  { t:"Take care of your body. It's the only place you have to live.", a:"Jim Rohn" },
+  { t:"Small daily improvements are the key to staggering long-term results.", a:"Unknown" },
+  { t:"Motivation gets you started. Habit keeps you going.", a:"Jim Ryun" },
+  { t:"Your only limit is you.", a:"Unknown" },
+  { t:"Strength does not come from what you can do. It comes from overcoming what you thought you couldn't.", a:"Rikki Rogers" },
+  { t:"Don't wish for it. Work for it.", a:"Unknown" },
+  { t:"A one hour workout is 4% of your day. No excuses.", a:"Unknown" },
+  { t:"Success is the sum of small efforts repeated day in and day out.", a:"Robert Collier" },
+  { t:"The hardest lift of all is lifting yourself off the couch.", a:"Unknown" },
+  { t:"You are one workout away from a good mood.", a:"Unknown" },
+  { t:"Fall in love with taking care of yourself.", a:"Unknown" },
+  { t:"The difference between try and triumph is a little umph.", a:"Marvin Phillips" },
+  { t:"Nothing will work unless you do.", a:"Maya Angelou" },
+  { t:"Push yourself, because no one else is going to do it for you.", a:"Unknown" },
+  { t:"Energy and persistence conquer all things.", a:"Benjamin Franklin" },
+  { t:"Do something today that your future self will thank you for.", a:"Sean Patrick Flanery" },
+  { t:"The pain you feel today will be the strength you feel tomorrow.", a:"Unknown" },
+  { t:"Wake up with determination. Go to bed with satisfaction.", a:"Unknown" },
+  { t:"Good things come to those who sweat.", a:"Unknown" },
+  { t:"If it doesn't challenge you, it won't change you.", a:"Fred DeVito" },
+  { t:"Fitness is not about being better than someone else. It's about being better than you used to be.", a:"Unknown" },
+  { t:"We are what we repeatedly do. Excellence, then, is not an act, but a habit.", a:"Will Durant" },
+  { t:"Believe you can and you're halfway there.", a:"Theodore Roosevelt" },
+  { t:"Start where you are. Use what you have. Do what you can.", a:"Arthur Ashe" },
+  { t:"The groundwork for all happiness is good health.", a:"Leigh Hunt" },
+  { t:"Every workout is progress, no matter how small.", a:"Unknown" },
+  { t:"Rome wasn't built in a day, but they worked on it every single day.", a:"Unknown" },
+  { t:"Your body can stand almost anything. It's your mind you have to convince.", a:"Unknown" },
+  { t:"Sore today, strong tomorrow.", a:"Unknown" },
+  { t:"Change happens at the end of your comfort zone.", a:"Roy T. Bennett" },
+  { t:"Don't stop when you're tired. Stop when you're done.", a:"Unknown" }
 ];
 
-// Short messages that appear when you tick one item off.
 const NUDGES = ["Nice one! 💪","Keep going!","That's one down.","Strong work!","Yes! 🔥","Love that.","Momentum!","One rep closer."];
-
-// Titles shown on the big celebration screen (one is picked at random).
-const WINS = ["GREAT JOB!","YOU CRUSHED IT!","WORKOUT COMPLETE!","LEGEND!","THAT'S A WIN!"];
+const WINS   = ["GREAT JOB!","YOU CRUSHED IT!","WORKOUT COMPLETE!","LEGEND!","THAT'S A WIN!"];
 
 
 /* ============================================================
-   PART B — SAVING PROGRESS
-   Browsers give every website a small storage box called
-   localStorage. We keep today's checkmarks and the streak there
-   so it survives a refresh. It's wrapped in try/catch because a
-   few browser modes block storage — if that happens the app
-   still works, it just forgets on reload.
+   JS B — SAVING
+   Everything lives in one object called S, kept in the browser's
+   localStorage. Shape:
+     S.routine  = the exercise list
+     S.today    = { date, done:[ids ticked today] }
+     S.history  = { "2026-09-03": {c:5, t:8}, ... }  c=done, t=total
    ============================================================ */
-const KEY = "rise-workout-v1";
-let memoryFallback = null;   // used if localStorage isn't available
+const KEY = "rise-v2";
+let memoryFallback = null;
 
-function loadState(){
+function pad(n){ return String(n).padStart(2,"0"); }
+function dateKey(d){ return d.getFullYear() + "-" + pad(d.getMonth()+1) + "-" + pad(d.getDate()); }
+function todayKey(){ return dateKey(new Date()); }
+
+function load(){
   try{
     const raw = localStorage.getItem(KEY);
     if(raw) return JSON.parse(raw);
-  }catch(e){ /* storage blocked — fall through */ }
-  return memoryFallback || {};
+  }catch(e){}
+  if(memoryFallback) return memoryFallback;
+  return null;
+}
+function save(){
+  memoryFallback = S;
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
 }
 
-function saveState(state){
-  memoryFallback = state;
-  try{ localStorage.setItem(KEY, JSON.stringify(state)); }
-  catch(e){ /* storage blocked — memoryFallback still holds it */ }
-}
+let S = load() || {
+  routine: JSON.parse(JSON.stringify(DEFAULT_ROUTINE)),
+  today:   { date: todayKey(), done: [] },
+  history: {}
+};
 
-// "2026-09-03" — a simple text key for "which day is it"
-function todayKey(){
-  const d = new Date();
-  return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
-}
+// A new day? Clear today's ticks. Yesterday already lives in history.
+if(S.today.date !== todayKey()) S.today = { date: todayKey(), done: [] };
 
-// Load, and wipe the checkmarks if it's a new day
-let state = loadState();
-if(state.date !== todayKey()){
-  state = { date: todayKey(), done: [], streak: state.streak || 0, lastWin: state.lastWin || null };
-  saveState(state);
+// Drop any ticked id that no longer exists (they deleted the exercise)
+S.today.done = S.today.done.filter(id => S.routine.some(e => e.id === id));
+
+function recordToday(){
+  S.history[todayKey()] = { c: S.today.done.length, t: S.routine.length };
+  save();
 }
 
 
 /* ============================================================
-   PART C — THE DAILY QUOTE
-   We want the SAME quote all day, but a DIFFERENT one tomorrow.
-   So instead of Math.random(), we count how many days have passed
-   since 1970 and use that number to pick from the list.
+   JS C — THE DAILY QUOTE
+   Same quote all day, different tomorrow: we pick using the number
+   of days since 1970 rather than Math.random().
    ============================================================ */
-let quoteOffset = 0;   // bumped by the "Another one" button
-
+let quoteOffset = 0;
 function showQuote(animate){
-  const daysSinceEpoch = Math.floor(Date.now() / 86400000);   // 86,400,000 ms = 1 day
-  const index = (daysSinceEpoch + quoteOffset) % QUOTES.length;
-  const q = QUOTES[index];
-
-  const quoteEl  = document.getElementById("quote");
-  const authorEl = document.getElementById("author");
-
-  quoteEl.textContent  = q.t;
-  authorEl.textContent = "— " + q.a;
-
-  if(animate){
-    // Remove then re-add the class so the animation can replay
-    quoteEl.classList.remove("quote-swap");
-    void quoteEl.offsetWidth;              // forces the browser to notice
-    quoteEl.classList.add("quote-swap");
-  }
+  const days = Math.floor(Date.now() / 86400000);
+  const q = QUOTES[(days + quoteOffset) % QUOTES.length];
+  const el = document.getElementById("quote");
+  el.textContent = q.t;
+  document.getElementById("author").textContent = "— " + q.a;
+  if(animate){ el.classList.remove("quote-swap"); void el.offsetWidth; el.classList.add("quote-swap"); }
 }
-
-document.getElementById("newQuote").addEventListener("click", () => {
-  quoteOffset++;
-  showQuote(true);
-});
+document.getElementById("newQuote").addEventListener("click", () => { quoteOffset++; showQuote(true); });
 
 
 /* ============================================================
-   PART D — BUILDING THE CHECKLIST
-   Rather than typing 8 near-identical blocks of HTML, we loop
-   over the WORKOUT list and build each row in code.
+   JS D — THE TODAY TAB
    ============================================================ */
 const listEl = document.getElementById("list");
 
-WORKOUT.forEach((item, i) => {
-  const row = document.createElement("label");   // a <label> so the whole row is clickable
-  row.className = "exercise";
-  row.innerHTML = `
-    <input type="checkbox" data-index="${i}">
-    <span class="box">
-      <svg viewBox="0 0 24 24"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg>
-    </span>
-    <span class="info">
-      <span class="name">${item.name}</span>
-      <span class="reps">${item.reps}</span>
-    </span>
-  `;
-  listEl.appendChild(row);
-});
+function renderList(){
+  listEl.innerHTML = "";
 
-const boxes = listEl.querySelectorAll('input[type="checkbox"]');
+  if(S.routine.length === 0){
+    listEl.innerHTML = '<p class="empty-note">No exercises yet.<br>Head to the Routine tab to add some.</p>';
+    updateProgress();
+    return;
+  }
 
-// Restore anything that was already ticked earlier today
-boxes.forEach((box, i) => {
-  if(state.done.includes(i)) box.checked = true;
-  box.addEventListener("change", () => onToggle(box, i));
-});
+  S.routine.forEach(ex => {
+    const row = document.createElement("div");
+    row.className = "exercise";
+    const checked = S.today.done.includes(ex.id) ? "checked" : "";
+
+    row.innerHTML = `
+      <label class="tick">
+        <input type="checkbox" ${checked} data-id="${ex.id}">
+        <span class="box"><svg viewBox="0 0 24 24"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg></span>
+        <span class="info">
+          <span class="name"></span>
+          <span class="detail"></span>
+        </span>
+      </label>`;
+
+    // textContent (not innerHTML) so a name with < or > can't break the page
+    row.querySelector(".name").textContent   = ex.name;
+    row.querySelector(".detail").textContent = ex.detail;
+
+    if(ex.seconds){
+      const chip = document.createElement("button");
+      chip.className = "timer-chip";
+      chip.innerHTML = "⏱ " + fmtTime(ex.seconds);
+      chip.addEventListener("click", () => openTimer(ex));
+      row.appendChild(chip);
+    }
+
+    row.querySelector("input").addEventListener("change", e => onToggle(e.target, ex.id));
+    listEl.appendChild(row);
+  });
+
+  updateProgress();
+}
+
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec % 60;
+  return m ? (s ? m + ":" + pad(s) : m + ":00") : "0:" + pad(s);
+}
 
 
 /* ============================================================
-   PART E — WHAT HAPPENS WHEN YOU TICK A BOX
+   JS E — TICKING A BOX
    ============================================================ */
-function onToggle(box, index){
-  if(box.checked){
-    if(!state.done.includes(index)) state.done.push(index);
-
-    // Fire a little confetti burst right where the checkbox is
-    const rect = box.nextElementSibling.getBoundingClientRect();
-    burst(rect.left + rect.width/2, rect.top + rect.height/2, 26);
-
-    // ...and a quick encouraging toast
+function onToggle(input, id){
+  if(input.checked){
+    if(!S.today.done.includes(id)) S.today.done.push(id);
+    const r = input.nextElementSibling.getBoundingClientRect();
+    burst(r.left + r.width/2, r.top + r.height/2, 26);
     toast(NUDGES[Math.floor(Math.random()*NUDGES.length)]);
+    if(navigator.vibrate) navigator.vibrate(18);
   } else {
-    state.done = state.done.filter(n => n !== index);
+    S.today.done = S.today.done.filter(x => x !== id);
   }
-
-  saveState(state);
+  recordToday();
   updateProgress();
 }
 
 function updateProgress(){
-  const total = WORKOUT.length;
-  const done  = state.done.length;
-  const pct   = Math.round(done / total * 100);
+  const total = S.routine.length;
+  const done  = S.today.done.length;
+  const pct   = total ? Math.round(done/total*100) : 0;
 
-  // --- the ring ---
-  // A circle's outline length is 2 × π × radius. Our radius is 40.
-  // We draw the full outline, then "hide" part of it with dashoffset.
-  const circumference = 2 * Math.PI * 40;
+  const circ = 2 * Math.PI * 38;
   const ring = document.getElementById("ringFill");
-  ring.style.strokeDasharray  = circumference;
-  ring.style.strokeDashoffset = circumference * (1 - done/total);
+  ring.style.strokeDasharray  = circ;
+  ring.style.strokeDashoffset = total ? circ * (1 - done/total) : circ;
 
   document.getElementById("pct").textContent = pct + "%";
-  document.getElementById("progressSub").textContent = `${done} of ${total} exercises complete`;
+  document.getElementById("progressSub").textContent =
+    `${done} of ${total} exercise${total === 1 ? "" : "s"} complete`;
 
   const title = document.getElementById("progressTitle");
-  if(done === 0)            title.textContent = "Let's get moving";
-  else if(pct < 50)         title.textContent = "Good start";
-  else if(pct < 100)        title.textContent = "Almost there";
-  else                      title.textContent = "Workout complete!";
+  if(total === 0)   title.textContent = "No exercises yet";
+  else if(done===0) title.textContent = "Let's get moving";
+  else if(pct<50)   title.textContent = "Good start";
+  else if(pct<100)  title.textContent = "Almost there";
+  else              title.textContent = "Workout complete!";
 
-  // --- did they just finish everything? ---
-  if(done === total && state.lastWin !== todayKey()){
-    state.lastWin = todayKey();
-    state.streak  = (state.streak || 0) + 1;
-    saveState(state);
-    document.getElementById("streakCount").textContent = state.streak;
-    setTimeout(celebrate, 320);   // small pause so the last checkmark animation lands first
+  const streak = currentStreak();
+  document.getElementById("streakCount").textContent = streak;
+
+  // Just finished everything, and we haven't celebrated today yet?
+  if(total > 0 && done === total && !celebratedToday){
+    celebratedToday = true;
+    setTimeout(celebrate, 320);
+  }
+  if(done < total) celebratedToday = false;
+}
+
+// Was today already fully done when the app opened? Then don't re-celebrate.
+let celebratedToday = (() => {
+  const h = S.history[todayKey()];
+  return !!(h && h.t > 0 && h.c >= h.t);
+})();
+
+
+/* ============================================================
+   STREAK MATH
+   A day counts only when every exercise was ticked. Today not being
+   finished yet doesn't break the streak — we start counting from
+   yesterday in that case.
+   ============================================================ */
+function dayComplete(key){
+  const h = S.history[key];
+  return !!(h && h.t > 0 && h.c >= h.t);
+}
+function currentStreak(){
+  let n = 0;
+  const d = new Date();
+  if(!dayComplete(todayKey())) d.setDate(d.getDate() - 1);
+  while(dayComplete(dateKey(d))){ n++; d.setDate(d.getDate() - 1); }
+  return n;
+}
+function bestStreak(){
+  const days = Object.keys(S.history).filter(dayComplete).sort();
+  let best = 0, run = 0, prev = null;
+  days.forEach(k => {
+    if(prev){
+      const gap = (new Date(k) - new Date(prev)) / 86400000;
+      run = (Math.round(gap) === 1) ? run + 1 : 1;
+    } else run = 1;
+    best = Math.max(best, run);
+    prev = k;
+  });
+  return best;
+}
+
+
+/* ============================================================
+   JS F — THE TIMER
+   ============================================================ */
+let timerEx = null, timerLeft = 0, timerTotal = 0, timerId = null, timerRunning = false;
+
+const tOverlay = document.getElementById("timerOverlay");
+const tFill    = document.getElementById("timerFill");
+const tCount   = document.getElementById("timerCount");
+const tToggle  = document.getElementById("timerToggle");
+
+function openTimer(ex){
+  timerEx = ex;
+  timerTotal = timerLeft = ex.seconds;
+  document.getElementById("timerName").textContent   = ex.name;
+  document.getElementById("timerDetail").textContent = ex.detail;
+  paintTimer();
+  tToggle.textContent = "Start";
+  timerRunning = false;
+  tOverlay.classList.add("show");
+}
+function paintTimer(){
+  tCount.textContent = fmtTime(timerLeft);
+  const circ = 2 * Math.PI * 92;
+  tFill.style.strokeDasharray  = circ;
+  tFill.style.strokeDashoffset = circ * (1 - timerLeft / timerTotal);
+}
+function tickTimer(){
+  timerLeft--;
+  paintTimer();
+  if(timerLeft <= 0) finishTimer();
+}
+tToggle.addEventListener("click", () => {
+  if(timerRunning){
+    clearInterval(timerId); timerRunning = false; tToggle.textContent = "Resume";
+  } else {
+    if(timerLeft <= 0){ timerLeft = timerTotal; paintTimer(); }
+    timerId = setInterval(tickTimer, 1000);
+    timerRunning = true; tToggle.textContent = "Pause";
+  }
+});
+function closeTimer(){
+  clearInterval(timerId); timerRunning = false;
+  tOverlay.classList.remove("show");
+}
+document.getElementById("timerClose").addEventListener("click", closeTimer);
+
+function finishTimer(){
+  clearInterval(timerId); timerRunning = false;
+  beep();
+  if(navigator.vibrate) navigator.vibrate([120,60,120]);
+
+  // Tick the exercise off automatically
+  if(timerEx && !S.today.done.includes(timerEx.id)){
+    S.today.done.push(timerEx.id);
+    recordToday();
+    renderList();
+    burst(window.innerWidth/2, window.innerHeight/2, 40);
+  }
+  tToggle.textContent = "Again";
+  setTimeout(closeTimer, 900);
+}
+
+// A short two-tone chime, built with the browser's audio engine.
+// No sound file needed, so nothing extra to download.
+function beep(){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return;
+    const ctx = new Ctx();
+    [0, 0.18].forEach((delay, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = i === 0 ? 660 : 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + delay + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + 0.28);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + delay);
+      osc.stop(ctx.currentTime + delay + 0.3);
+    });
+    setTimeout(() => ctx.close(), 900);
+  }catch(e){}
+}
+
+
+/* ============================================================
+   JS G — PROGRESS TAB & CHARTS
+   ============================================================ */
+const tip = document.getElementById("chartTip");
+function showTip(x, y, html){
+  tip.innerHTML = html;
+  tip.classList.add("show");
+  // Keep the bubble on screen — near the right edge it would otherwise
+  // hang off the side and get cut in half.
+  const half = tip.offsetWidth / 2;
+  const clamped = Math.max(half + 8, Math.min(x, window.innerWidth - half - 8));
+  tip.style.left = clamped + "px";
+  tip.style.top  = y + "px";
+}
+function hideTip(){ tip.classList.remove("show"); }
+
+/* Attach a tooltip to a chart mark.
+   Phones have no hover, so a tap has to work too — otherwise the only
+   way to read an exact value would be a mouse, and half the app's
+   users are on a phone. `offsetY` nudges the bubble off the mark. */
+let tapTipTimer;
+function bindTip(el, buildHtml, offsetY){
+  const place = () => {
+    const r = el.getBoundingClientRect();
+    showTip(r.left + r.width/2, r.top + (offsetY || 0), buildHtml());
+  };
+  el.addEventListener("mouseenter", place);
+  el.addEventListener("mouseleave", hideTip);
+  el.addEventListener("click", () => {
+    place();
+    clearTimeout(tapTipTimer);
+    tapTipTimer = setTimeout(hideTip, 2200);
+  });
+}
+
+function renderProgress(){
+  const streak = currentStreak();
+  document.getElementById("heroStreak").textContent = streak;
+  document.getElementById("heroLabel").textContent =
+    streak === 0 ? "day streak — finish today to start one"
+  : streak === 1 ? "day streak — come back tomorrow to make it two"
+  : "days in a row";
+
+  document.getElementById("statBest").textContent  = bestStreak();
+
+  const allDone = Object.keys(S.history).filter(dayComplete);
+  document.getElementById("statTotal").textContent = allDone.length;
+
+  const nowMonth = todayKey().slice(0,7);
+  document.getElementById("statMonth").textContent =
+    allDone.filter(k => k.slice(0,7) === nowMonth).length;
+
+  renderHeatmap();
+  renderBars();
+}
+
+/* --- 12-week heatmap -----------------------------------------
+   Sequential scale: ONE hue, dim -> bright. Five levels including
+   "nothing", which is the most a reader can tell apart at this size.
+--------------------------------------------------------------*/
+function heatLevel(key){
+  const h = S.history[key];
+  if(!h || h.t === 0 || h.c === 0) return 0;
+  const r = h.c / h.t;
+  if(r >= 1)   return 4;
+  if(r >= 0.66) return 3;
+  if(r >= 0.33) return 2;
+  return 1;
+}
+
+function renderHeatmap(){
+  const wrap = document.getElementById("heat");
+  wrap.innerHTML = "";
+
+  // Start 12 weeks back, on a Monday, so each column is a clean week
+  const start = new Date();
+  start.setHours(0,0,0,0);
+  start.setDate(start.getDate() - 83);
+  const shift = (start.getDay() + 6) % 7;      // 0 = Monday
+  start.setDate(start.getDate() - shift);
+
+  const tk = todayKey();
+  const now = new Date(); now.setHours(23,59,59,999);
+
+  for(let i = 0; i < 84 + shift; i++){
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const key = dateKey(d);
+
+    const cell = document.createElement("div");
+    cell.className = "heat-cell";
+
+    if(d > now){                                  // days that haven't happened
+      cell.style.background = "transparent";
+    } else {
+      const lvl = heatLevel(key);
+      cell.style.background = `var(--heat-${lvl})`;
+      if(key === tk) cell.classList.add("today");
+
+      const label = d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+      bindTip(cell, () => {
+        const h = S.history[key];
+        return `${label} — ` + (h && h.t ? `<b>${h.c}/${h.t}</b> exercises` : "Nothing logged");
+      }, 0);
+      cell.style.cursor = "pointer";
+    }
+    wrap.appendChild(cell);
   }
 }
 
+/* --- 8-week bar chart ----------------------------------------
+   One series, so no legend (the heading names it). Bars capped at
+   24px, 4px rounded cap, square at the baseline, hairline grid.
+   Only the tallest bar gets a direct label; the rest are on hover
+   and readable from the y-axis.
+--------------------------------------------------------------*/
+function renderBars(){
+  const weeks = [];
+  const monday = new Date();
+  monday.setHours(0,0,0,0);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));   // this week's Monday
+
+  for(let w = 7; w >= 0; w--){
+    const s = new Date(monday); s.setDate(monday.getDate() - w*7);
+    let count = 0;
+    for(let i = 0; i < 7; i++){
+      const d = new Date(s); d.setDate(s.getDate() + i);
+      if(dayComplete(dateKey(d))) count++;
+    }
+    weeks.push({
+      label: s.toLocaleDateString(undefined,{month:"short",day:"numeric"}),  // "Aug 24" — tooltip
+      short: (s.getMonth()+1) + "/" + s.getDate(),                            // "8/24"  — axis, fits
+      count
+    });
+  }
+
+  /* The viewBox is in real pixels (roughly the width this card gets on a
+     phone), so text set at 10-11px renders at 10-11px. Using a tiny
+     viewBox here would scale the labels up into a jumbled mess. */
+  const W = 340, H = 176;
+  const padL = 24, padR = 6, padT = 18, padB = 26;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const max = 7;                       // a week has 7 days — a fixed, honest ceiling
+  const band = plotW / weeks.length;
+  const barW = Math.min(band * 0.5, 24);   // capped at 24px, leftover band is air
+  const baseY = padT + plotH;
+
+  let svg = `<svg class="bars" viewBox="0 0 ${W} ${H}" role="img"
+    aria-label="Bar chart of workouts finished each week for the last eight weeks">`;
+
+  // gridlines + y ticks — clean numbers, solid hairlines, one shade off the surface
+  [0, 2, 4, 6].forEach(v => {
+    const y = padT + plotH * (1 - v/max);
+    svg += `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}"/>`;
+    svg += `<text class="tick-text" x="${padL - 7}" y="${y + 3.5}" text-anchor="end">${v}</text>`;
+  });
+
+  weeks.forEach((wk, i) => {
+    const cx = padL + band*i + band/2;
+    const h  = plotH * (wk.count / max);
+    const y  = baseY - h;
+    const r  = Math.min(4, h/2);        // 4px rounded cap, never taller than the bar itself
+
+    svg += `<g>`;
+    if(wk.count > 0){
+      // rounded at the top, square where it meets the baseline
+      svg += `<path class="bar" d="M${cx-barW/2} ${baseY}
+        L${cx-barW/2} ${y+r} Q${cx-barW/2} ${y} ${cx-barW/2+r} ${y}
+        L${cx+barW/2-r} ${y} Q${cx+barW/2} ${y} ${cx+barW/2} ${y+r}
+        L${cx+barW/2} ${baseY} Z"/>`;
+    }
+    // Label the endpoint only — this week. Never a number on every bar.
+    if(i === weeks.length - 1 && wk.count > 0){
+      svg += `<text class="val-text" x="${cx}" y="${y - 6}" text-anchor="middle">${wk.count}</text>`;
+    }
+    svg += `<text class="tick-text" x="${cx}" y="${H - 8}" text-anchor="middle">${wk.short}</text>`;
+    // generous invisible hit area so hover/tap isn't pinpoint
+    svg += `<rect class="bar-hit" x="${cx - band/2}" y="${padT}" width="${band}" height="${plotH}"
+      data-i="${i}"/>`;
+    svg += `</g>`;
+  });
+  svg += `</svg>`;
+
+  const wrap = document.getElementById("barsWrap");
+  wrap.innerHTML = svg;
+
+  wrap.querySelectorAll(".bar-hit").forEach(hit => {
+    const wk = weeks[+hit.dataset.i];
+    bindTip(hit, () => `Week of ${wk.label} — <b>${wk.count}</b> of 7 days`, 14);
+    hit.style.cursor = "pointer";
+  });
+}
+
 
 /* ============================================================
-   PART F — THE CELEBRATION
+   JS H — ROUTINE EDITOR
+   ============================================================ */
+const editList = document.getElementById("editList");
+let editingId = null;      // null = the form is adding, not editing
+
+function renderEditor(){
+  editList.innerHTML = "";
+
+  if(S.routine.length === 0){
+    editList.innerHTML = '<p class="empty-note">Your routine is empty.<br>Add your first exercise below.</p>';
+    return;
+  }
+
+  S.routine.forEach((ex, i) => {
+    const row = document.createElement("div");
+    row.className = "edit-row";
+    row.innerHTML = `
+      <span class="info"><span class="name"></span><span class="detail"></span></span>
+      <span class="row-actions">
+        <button class="icon-btn up"   title="Move up"   ${i === 0 ? "disabled" : ""}>↑</button>
+        <button class="icon-btn down" title="Move down" ${i === S.routine.length-1 ? "disabled" : ""}>↓</button>
+        <button class="icon-btn edit" title="Edit">✎</button>
+        <button class="icon-btn del"  title="Delete">✕</button>
+      </span>`;
+
+    row.querySelector(".name").textContent = ex.name;
+    row.querySelector(".detail").textContent =
+      ex.detail + (ex.seconds ? "  ·  ⏱ " + fmtTime(ex.seconds) : "");
+
+    row.querySelector(".up").addEventListener("click",   () => moveEx(i, -1));
+    row.querySelector(".down").addEventListener("click", () => moveEx(i,  1));
+    row.querySelector(".edit").addEventListener("click", () => startEdit(ex));
+    row.querySelector(".del").addEventListener("click",  () => deleteEx(ex.id));
+
+    editList.appendChild(row);
+  });
+}
+
+function moveEx(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= S.routine.length) return;
+  [S.routine[i], S.routine[j]] = [S.routine[j], S.routine[i]];
+  recordToday(); renderEditor(); renderList();
+}
+
+function deleteEx(id){
+  S.routine = S.routine.filter(e => e.id !== id);
+  S.today.done = S.today.done.filter(x => x !== id);
+  if(editingId === id) resetForm();
+  recordToday(); renderEditor(); renderList();
+  toast("Exercise removed.");
+}
+
+const fName = document.getElementById("fName");
+const fDetail = document.getElementById("fDetail");
+const fSeconds = document.getElementById("fSeconds");
+
+function startEdit(ex){
+  editingId = ex.id;
+  fName.value = ex.name;
+  fDetail.value = ex.detail;
+  fSeconds.value = ex.seconds || "";
+  document.getElementById("formTitle").textContent = "Edit exercise";
+  document.getElementById("saveExercise").textContent = "Save changes";
+  document.getElementById("cancelEdit").style.display = "";
+  fName.focus();
+}
+function resetForm(){
+  editingId = null;
+  fName.value = fDetail.value = fSeconds.value = "";
+  document.getElementById("formTitle").textContent = "Add an exercise";
+  document.getElementById("saveExercise").textContent = "Add exercise";
+  document.getElementById("cancelEdit").style.display = "none";
+}
+document.getElementById("cancelEdit").addEventListener("click", resetForm);
+
+document.getElementById("saveExercise").addEventListener("click", () => {
+  const name = fName.value.trim();
+  if(!name){ toast("Give the exercise a name first."); fName.focus(); return; }
+
+  const secs = parseInt(fSeconds.value, 10);
+  const seconds = (!isNaN(secs) && secs > 0) ? Math.min(secs, 3600) : null;
+  const detail = fDetail.value.trim() || (seconds ? fmtTime(seconds) : "");
+
+  if(editingId){
+    const ex = S.routine.find(e => e.id === editingId);
+    if(ex){ ex.name = name; ex.detail = detail; ex.seconds = seconds; }
+    toast("Saved.");
+  } else {
+    S.routine.push({ id: "e" + Date.now() + Math.floor(Math.random()*999), name, detail, seconds });
+    toast("Added to your routine.");
+  }
+  resetForm();
+  recordToday(); renderEditor(); renderList();
+});
+
+document.getElementById("restoreDefault").addEventListener("click", () => {
+  S.routine = JSON.parse(JSON.stringify(DEFAULT_ROUTINE));
+  S.today.done = [];
+  resetForm(); recordToday(); renderEditor(); renderList();
+  toast("Starter routine restored.");
+});
+
+
+/* ============================================================
+   JS I — CONFETTI, TOAST, CELEBRATION
    ============================================================ */
 function celebrate(){
   document.getElementById("celebrateTitle").textContent = WINS[Math.floor(Math.random()*WINS.length)];
+  const streak = currentStreak();
   document.getElementById("celebrateMsg").textContent =
-    state.streak > 1
-      ? `That's ${state.streak} days in a row. You're building something real.`
-      : "You finished every exercise today. That's a win.";
-
+    streak > 1 ? `That's ${streak} days in a row. You're building something real.`
+               : "You finished every exercise today. That's a win.";
   document.getElementById("celebration").classList.add("show");
   bigConfetti();
 }
-
 document.getElementById("closeCelebrate").addEventListener("click", () => {
   document.getElementById("celebration").classList.remove("show");
 });
-
-// Escape key also closes it
 document.addEventListener("keydown", e => {
-  if(e.key === "Escape") document.getElementById("celebration").classList.remove("show");
+  if(e.key === "Escape"){
+    document.getElementById("celebration").classList.remove("show");
+    closeTimer();
+  }
 });
 
-
-/* ============================================================
-   PART G — CONFETTI
-   No library needed. We draw little rotating rectangles onto a
-   full-screen canvas and let gravity pull them down.
-   ============================================================ */
 const canvas = document.getElementById("confetti");
-const ctx    = canvas.getContext("2d");
-let particles = [];
-let animating = false;
+const ctx = canvas.getContext("2d");
+let particles = [], animating = false;
 
 function sizeCanvas(){
-  // Multiply by devicePixelRatio so it stays crisp on retina screens
   const dpr = window.devicePixelRatio || 1;
   canvas.width  = window.innerWidth  * dpr;
   canvas.height = window.innerHeight * dpr;
-  canvas.style.width  = window.innerWidth  + "px";
+  canvas.style.width  = window.innerWidth + "px";
   canvas.style.height = window.innerHeight + "px";
   ctx.setTransform(dpr,0,0,dpr,0,0);
 }
@@ -785,90 +1201,45 @@ window.addEventListener("resize", sizeCanvas);
 
 const COLORS = ["#a78bfa","#f472b6","#38bdf8","#4ade80","#fbbf24","#fb7185","#ffffff"];
 
-// One burst from a single point (used when you tick a box)
 function burst(x, y, count){
   for(let i = 0; i < count; i++){
-    const angle = Math.random() * Math.PI * 2;
-    const speed = 3 + Math.random() * 7;
-    particles.push({
-      x, y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 3,
-      size: 4 + Math.random() * 6,
-      color: COLORS[Math.floor(Math.random()*COLORS.length)],
-      rotation: Math.random() * 360,
-      spin: (Math.random() - 0.5) * 22,
-      life: 1
-    });
+    const a = Math.random()*Math.PI*2, sp = 3 + Math.random()*7;
+    particles.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp - 3,
+      size:4+Math.random()*6, color:COLORS[Math.floor(Math.random()*COLORS.length)],
+      rotation:Math.random()*360, spin:(Math.random()-.5)*22, life:1 });
   }
   start();
 }
-
-// The full-screen shower (used for finishing the whole workout)
 function bigConfetti(){
-  // Three waves, slightly apart, so it rains rather than blinks
-  for(let wave = 0; wave < 3; wave++){
+  for(let w = 0; w < 3; w++){
     setTimeout(() => {
       for(let i = 0; i < 90; i++){
-        particles.push({
-          x: Math.random() * window.innerWidth,
-          y: -20 - Math.random() * 120,
-          vx: (Math.random() - 0.5) * 5,
-          vy: 2 + Math.random() * 5,
-          size: 5 + Math.random() * 8,
-          color: COLORS[Math.floor(Math.random()*COLORS.length)],
-          rotation: Math.random() * 360,
-          spin: (Math.random() - 0.5) * 18,
-          life: 1
-        });
+        particles.push({ x:Math.random()*window.innerWidth, y:-20-Math.random()*120,
+          vx:(Math.random()-.5)*5, vy:2+Math.random()*5, size:5+Math.random()*8,
+          color:COLORS[Math.floor(Math.random()*COLORS.length)],
+          rotation:Math.random()*360, spin:(Math.random()-.5)*18, life:1 });
       }
       start();
-    }, wave * 260);
+    }, w*260);
   }
-  // Two side cannons for good measure
-  burst(40, window.innerHeight * 0.7, 45);
-  burst(window.innerWidth - 40, window.innerHeight * 0.7, 45);
+  burst(40, window.innerHeight*0.7, 45);
+  burst(window.innerWidth-40, window.innerHeight*0.7, 45);
 }
-
-function start(){
-  if(!animating){ animating = true; requestAnimationFrame(tick); }
-}
-
+function start(){ if(!animating){ animating = true; requestAnimationFrame(tick); } }
 function tick(){
-  ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-
+  ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
   particles.forEach(p => {
-    p.vy       += 0.28;      // gravity
-    p.vx       *= 0.995;     // air resistance
-    p.x        += p.vx;
-    p.y        += p.vy;
-    p.rotation += p.spin;
-    p.life     -= 0.006;     // slowly fade out
-
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    ctx.rotate(p.rotation * Math.PI / 180);
-    ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle = p.color;
-    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size * 0.6);
-    ctx.restore();
+    p.vy += .28; p.vx *= .995; p.x += p.vx; p.y += p.vy;
+    p.rotation += p.spin; p.life -= .006;
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rotation*Math.PI/180);
+    ctx.globalAlpha = Math.max(0,p.life); ctx.fillStyle = p.color;
+    ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*.6); ctx.restore();
   });
-
-  // Throw away anything that's faded or fallen off the bottom
   particles = particles.filter(p => p.life > 0 && p.y < window.innerHeight + 60);
-
-  if(particles.length > 0){
-    requestAnimationFrame(tick);
-  } else {
-    animating = false;
-    ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
-  }
+  if(particles.length){ requestAnimationFrame(tick); }
+  else { animating = false; ctx.clearRect(0,0,window.innerWidth,window.innerHeight); }
 }
 
-
-/* ============================================================
-   PART H — THE LITTLE TOAST MESSAGE
-   ============================================================ */
 let toastTimer;
 function toast(text){
   const el = document.getElementById("toast");
@@ -878,42 +1249,43 @@ function toast(text){
   toastTimer = setTimeout(() => el.classList.remove("show"), 1700);
 }
 
-
-/* ============================================================
-   PART I — RESET BUTTON
-   ============================================================ */
 document.getElementById("reset").addEventListener("click", () => {
-  state.done = [];
-  saveState(state);
-  boxes.forEach(b => b.checked = false);
-  updateProgress();
+  S.today.done = [];
+  celebratedToday = false;
+  recordToday(); renderList();
   toast("Reset — fresh start.");
 });
 
 
 /* ============================================================
-   PART J — START THE APP
+   JS J — TABS & START-UP
    ============================================================ */
-document.getElementById("today").textContent =
-  new Date().toLocaleDateString(undefined, { weekday:"long", month:"long", day:"numeric" });
+document.querySelectorAll(".tabbar button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("view-" + btn.dataset.view).classList.add("active");
+    hideTip();
+    if(btn.dataset.view === "progress") renderProgress();
+    if(btn.dataset.view === "routine")  renderEditor();
+    window.scrollTo(0,0);
+  });
+});
 
-document.getElementById("streakCount").textContent = state.streak || 0;
+document.getElementById("today").textContent =
+  new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
 
 showQuote(false);
-updateProgress();
+renderList();
+recordToday();
 
-
-/* ============================================================
-   PART K — TURN ON OFFLINE SUPPORT
-   This hands sw.js to the browser to run in the background.
-   It only works on a real web address (https://...), so it
-   quietly does nothing when you open the file by double-clicking
-   it on your computer. That's expected — not an error.
-   ============================================================ */
+/* Offline support. Only works on a real https address, so it quietly
+   does nothing when you open the file straight off your computer. */
 if("serviceWorker" in navigator){
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js")
-      .then(()  => console.log("Offline support is on."))
+      .then(()   => console.log("Offline support is on."))
       .catch(err => console.log("Offline support not available here:", err.message));
   });
 }
