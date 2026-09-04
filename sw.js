@@ -9,7 +9,7 @@
    (v1 → v2) and push again. That's the standard fix.
    ============================================================ */
 
-const CACHE = "rise-v2";
+const CACHE = "rise-v4";
 
 // The files that get saved for offline use.
 // If you add a new file to your project, add it to this list too.
