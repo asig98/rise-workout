@@ -1,0 +1,445 @@
+/* ===== CSS 1. TOKENS ===================================== */
+:root{
+  --bg:#08080f;
+  --surface:rgba(255,255,255,0.045);
+  --surface-hi:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.10);
+  --border-hi:rgba(255,255,255,0.22);
+  --text:#f4f3ff;
+  --text-soft:rgba(244,243,255,0.62);
+  --text-faint:rgba(244,243,255,0.34);
+  --accent:#a78bfa;
+  --accent-2:#f472b6;
+  --accent-3:#38bdf8;
+  --success:#4ade80;
+  --danger:#fb7185;
+  --rest:#38bdf8;
+  --heat-0:rgba(255,255,255,0.055);
+  --heat-1:#4c3a8a; --heat-2:#6d51c4; --heat-3:#8b6ee6; --heat-4:#a78bfa;
+  --grid:rgba(255,255,255,0.09);
+  --radius:22px; --radius-sm:14px;
+  --shadow:0 24px 60px -18px rgba(0,0,0,0.85);
+  --font-display:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-quote:'Fraunces',Georgia,'Times New Roman',serif;
+}
+
+/* ===== CSS 2. RESET & SHELL ============================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:var(--font-display);line-height:1.55;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;display:flex;justify-content:center;
+  padding:clamp(16px,4vw,40px) clamp(14px,4vw,24px) calc(96px + env(safe-area-inset-bottom));
+}
+.aurora{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform}
+.blob.one{width:52vmax;height:52vmax;background:radial-gradient(circle,#7c3aed 0%,transparent 68%);top:-18vmax;left:-14vmax;animation:drift1 22s ease-in-out infinite alternate}
+.blob.two{width:46vmax;height:46vmax;background:radial-gradient(circle,#db2777 0%,transparent 68%);bottom:-20vmax;right:-12vmax;animation:drift2 26s ease-in-out infinite alternate}
+.blob.three{width:40vmax;height:40vmax;background:radial-gradient(circle,#0284c7 0%,transparent 68%);top:38%;left:52%;animation:drift3 30s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(12vmax,10vmax) scale(1.15)}}
+@keyframes drift2{to{transform:translate(-14vmax,-8vmax) scale(1.1)}}
+@keyframes drift3{to{transform:translate(-16vmax,12vmax) scale(.85)}}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+.app{width:100%;max-width:620px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:var(--shadow)}
+.rise{opacity:0;animation:rise .7s cubic-bezier(.16,1,.3,1) forwards;animation-delay:var(--d,0s)}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.view{display:none}
+.view.active{display:block}
+.hidden{display:none !important}
+.section-title{font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--text-faint);margin:26px 4px 12px}
+
+/* ===== CSS 3. HEADER ===================================== */
+.eyebrow{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);margin-bottom:10px}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--success);
+  box-shadow:0 0 12px var(--success);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+.title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{font-size:clamp(36px,8.5vw,56px);font-weight:800;line-height:.95;letter-spacing:-.035em;
+  background:linear-gradient(115deg,#fff 10%,var(--accent) 55%,var(--accent-2) 95%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.subtitle{color:var(--text-soft);font-size:15px;margin-top:8px;font-weight:300}
+.streak-pill{display:flex;align-items:center;gap:9px;padding:9px 15px;border-radius:100px;
+  background:var(--surface-hi);border:1px solid var(--border);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);white-space:nowrap;flex-shrink:0}
+.streak-pill .flame{font-size:17px;filter:drop-shadow(0 0 8px rgba(251,146,60,.8))}
+.streak-pill b{font-size:17px;font-weight:700}
+.streak-pill span{font-size:12px;color:var(--text-soft)}
+
+/* ===== CSS 4. QUOTE ====================================== */
+.quote-card{position:relative;overflow:hidden;padding:30px 26px 24px;margin:22px 0}
+.quote-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--accent-2),var(--accent-3),transparent);opacity:.9}
+.quote-card::after{content:'"';position:absolute;top:-26px;right:14px;font-family:var(--font-quote);
+  font-size:170px;line-height:1;color:rgba(255,255,255,.045);pointer-events:none;user-select:none}
+#quote{font-family:var(--font-quote);font-size:clamp(19px,4.4vw,26px);line-height:1.36;
+  letter-spacing:-.015em;position:relative;z-index:1}
+#author{margin-top:15px;font-size:12px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent)}
+.quote-swap{animation:swap .5s ease}
+@keyframes swap{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.ghost-btn{background:none;border:1px solid var(--border);color:var(--text-soft);font-family:inherit;
+  font-size:12px;font-weight:500;padding:7px 14px;border-radius:100px;cursor:pointer;transition:all .25s ease}
+.ghost-btn:hover{border-color:var(--border-hi);color:var(--text);background:var(--surface-hi)}
+.newquote{margin-top:16px}
+
+/* ===== CSS 5. RING & REST DAY ============================ */
+.progress-card{padding:22px 24px;margin-bottom:16px;display:flex;align-items:center;gap:20px}
+.ring{position:relative;width:92px;height:92px;flex-shrink:0}
+.ring svg{transform:rotate(-90deg);display:block}
+.ring .track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:9}
+.ring .fill{fill:none;stroke:url(#ringGrad);stroke-width:9;stroke-linecap:round;
+  transition:stroke-dashoffset .9s cubic-bezier(.16,1,.3,1);filter:drop-shadow(0 0 8px rgba(167,139,250,.65))}
+.ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-label b{font-size:23px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ring-label span{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}
+.progress-text h2{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.progress-text p{font-size:14px;color:var(--text-soft);font-weight:300}
+
+.rest-card{padding:38px 28px;text-align:center;margin-bottom:20px;position:relative;overflow:hidden}
+.rest-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--rest),transparent);opacity:.85}
+.rest-card .moon{font-size:52px;line-height:1;display:block;margin-bottom:16px}
+.rest-card h2{font-size:26px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px}
+.rest-card p{color:var(--text-soft);font-size:15px;font-weight:300;max-width:340px;margin:0 auto 22px}
+.rest-card .safe{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--rest);
+  margin-bottom:22px;padding:6px 14px;border-radius:100px;background:rgba(56,189,248,.1);
+  border:1px solid rgba(56,189,248,.25)}
+
+/* start / shuffle row */
+.action-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.action-row .btn{flex:1;min-width:150px;padding:15px 20px;font-size:15px}
+.shuffle-note{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 18px;margin-bottom:16px;border-radius:var(--radius-sm);
+  background:rgba(56,189,248,.09);border:1px solid rgba(56,189,248,.28);
+  font-size:13px;color:#7dd3fc;flex-wrap:wrap}
+.shuffle-note button{background:none;border:1px solid rgba(56,189,248,.4);color:#7dd3fc;
+  font-family:inherit;font-size:12px;font-weight:600;padding:6px 13px;border-radius:100px;
+  cursor:pointer;white-space:nowrap;transition:all .2s ease}
+.shuffle-note button:hover{background:rgba(56,189,248,.16)}
+
+/* ===== CSS 6. CHECKLIST ================================== */
+.list-card{padding:8px;margin-bottom:18px}
+.exercise{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius-sm);
+  position:relative;transition:background .25s ease;-webkit-tap-highlight-color:transparent}
+.exercise:hover{background:var(--surface-hi)}
+.exercise:not(:last-child)::after{content:"";position:absolute;left:60px;right:14px;bottom:0;height:1px;background:var(--border)}
+.tick{display:flex;align-items:center;gap:14px;flex:1;min-width:0;cursor:pointer}
+.exercise input{position:absolute;opacity:0;pointer-events:none}
+.box{width:30px;height:30px;flex-shrink:0;border:2px solid var(--border-hi);border-radius:10px;
+  display:grid;place-items:center;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+.box svg{width:17px;height:17px}
+.box svg path{fill:none;stroke:#08080f;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .35s ease .08s}
+.info{flex:1;min-width:0;display:flex;flex-direction:column}
+.info .name{font-size:16px;font-weight:500;letter-spacing:-.01em;transition:color .3s ease}
+.info .detail{font-size:13px;color:var(--text-faint);font-weight:300;margin-top:2px;transition:color .3s ease}
+.info .detail .up{color:var(--accent);font-weight:600}
+.exercise input:checked + .box{background:linear-gradient(135deg,var(--success),#22d3ee);border-color:transparent;
+  box-shadow:0 0 22px rgba(74,222,128,.55);animation:pop .42s cubic-bezier(.34,1.56,.64,1)}
+.exercise input:checked + .box svg path{stroke-dashoffset:0}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.32)}100%{transform:scale(1)}}
+.exercise input:checked ~ .info .name{color:var(--text-faint);text-decoration:line-through;
+  text-decoration-color:rgba(74,222,128,.7);text-decoration-thickness:2px}
+.exercise input:checked ~ .info .detail{color:rgba(244,243,255,.2)}
+.exercise input:focus-visible + .box{outline:2px solid var(--accent);outline-offset:3px}
+.timer-chip{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;
+  background:var(--surface-hi);border:1px solid var(--border);color:var(--text-soft);font-family:inherit;
+  font-size:12px;font-weight:600;cursor:pointer;transition:all .22s ease}
+.timer-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(167,139,250,.1)}
+.reset{display:block;margin:0 auto;background:none;border:none;color:var(--text-faint);font-family:inherit;
+  font-size:13px;padding:10px 18px;cursor:pointer;border-radius:100px;transition:color .25s ease,background .25s ease}
+.reset:hover{color:var(--text-soft);background:var(--surface)}
+
+/* ===== CSS 7. TIMER OVERLAY ============================== */
+#timerOverlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:24px;
+  background:rgba(8,8,15,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s}
+#timerOverlay.show{opacity:1;visibility:visible}
+.timer-box{text-align:center;width:100%;max-width:340px}
+.timer-name{font-size:20px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.timer-detail{font-size:13px;color:var(--text-faint);margin-bottom:26px}
+.timer-ring{position:relative;width:min(260px,72vw);aspect-ratio:1;margin:0 auto 28px}
+.timer-ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.timer-ring .track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:8}
+.timer-ring .fill{fill:none;stroke:url(#timerGrad);stroke-width:8;stroke-linecap:round;
+  transition:stroke-dashoffset .35s linear;filter:drop-shadow(0 0 14px rgba(167,139,250,.6))}
+.timer-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(52px,15vw,68px);font-weight:300;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.timer-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{font-family:inherit;font-size:15px;font-weight:600;padding:13px 30px;border-radius:100px;
+  cursor:pointer;border:none;transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.btn-primary{background:linear-gradient(115deg,var(--accent),var(--accent-2));color:#fff;
+  box-shadow:0 10px 30px -8px rgba(167,139,250,.7)}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-quiet{background:var(--surface-hi);border:1px solid var(--border);color:var(--text-soft)}
+.btn-quiet:hover{color:var(--text);border-color:var(--border-hi)}
+
+/* ===== CSS 8. GUIDED PLAYER ============================== */
+#player{position:fixed;inset:0;z-index:95;display:flex;flex-direction:column;
+  background:var(--bg);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s;
+  padding:calc(18px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))}
+#player.show{opacity:1;visibility:visible}
+#player.resting{background:#061019}
+.player-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.player-step{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}
+.player-exit{background:none;border:1px solid var(--border);color:var(--text-faint);font-family:inherit;
+  font-size:12px;padding:7px 14px;border-radius:100px;cursor:pointer;transition:all .2s ease}
+.player-exit:hover{color:var(--text);border-color:var(--border-hi)}
+.player-bar{height:4px;border-radius:100px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:auto}
+.player-bar div{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width .5s cubic-bezier(.16,1,.3,1)}
+.player-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:6px;padding:16px 0}
+.player-label{font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+#player.resting .player-label{color:var(--rest)}
+.player-name{font-size:clamp(28px,7.5vw,42px);font-weight:700;letter-spacing:-.035em;line-height:1.08}
+.player-target{font-size:15px;color:var(--text-soft);font-weight:300;margin-top:2px}
+.player-sets{font-size:12.5px;color:var(--text-faint);margin-top:2px;letter-spacing:.05em}
+.player-ring{position:relative;width:min(230px,60vw);aspect-ratio:1;margin:20px auto 8px}
+.player-ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.player-ring .track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:7}
+.player-ring .fill{fill:none;stroke:url(#timerGrad);stroke-width:7;stroke-linecap:round;
+  transition:stroke-dashoffset .3s linear;filter:drop-shadow(0 0 14px rgba(167,139,250,.55))}
+#player.resting .player-ring .fill{stroke:url(#restGrad);filter:drop-shadow(0 0 14px rgba(56,189,248,.55))}
+.player-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(46px,13vw,62px);font-weight:300;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.player-reps{font-size:clamp(58px,17vw,84px);font-weight:200;letter-spacing:-.05em;line-height:1;margin:24px 0 4px}
+.player-next{font-size:13.5px;color:var(--text-soft);font-weight:300;margin-top:14px}
+.player-next b{color:var(--text);font-weight:600}
+.player-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.player-actions .btn{min-width:126px}
+
+/* ===== CSS 9. PROGRESS TAB =============================== */
+.hero-card{padding:30px 26px;text-align:center;margin-bottom:12px}
+.hero-card .hero-num{font-size:76px;font-weight:800;line-height:1;letter-spacing:-.05em;
+  background:linear-gradient(115deg,#fff,var(--accent) 60%,var(--accent-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.hero-card .hero-label{font-size:13px;color:var(--text-soft);margin-top:8px;font-weight:300}
+.level-card{padding:22px 24px;margin-bottom:12px}
+.level-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
+.level-top b{font-size:19px;font-weight:600;letter-spacing:-.02em}
+.level-top span{font-size:12.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.level-card p{font-size:13px;color:var(--text-soft);font-weight:300;margin-bottom:14px}
+.meter{height:8px;border-radius:100px;background:rgba(167,139,250,.16);overflow:hidden}
+.meter-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width .8s cubic-bezier(.16,1,.3,1)}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px}
+.stat{padding:18px 12px;text-align:center}
+.stat b{display:block;font-size:26px;font-weight:600;letter-spacing:-.03em}
+.stat span{display:block;font-size:11px;color:var(--text-faint);margin-top:4px;letter-spacing:.06em;line-height:1.3}
+.record-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.record{padding:16px 8px;text-align:center}
+.record span{display:block;font-size:10px;color:var(--text-faint);margin-top:3px;letter-spacing:.05em;line-height:1.3}
+.record .ico{font-size:19px;margin:0 0 5px;line-height:1}
+.record b{display:block;font-size:25px;font-weight:600;letter-spacing:-.03em}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:9px;padding:16px}
+.badge{text-align:center;padding:14px 7px;border-radius:var(--radius-sm);background:rgba(255,255,255,.03);
+  border:1px solid var(--border);transition:all .3s ease}
+.badge .ico{display:block;font-size:25px;line-height:1;margin-bottom:8px;filter:grayscale(1);opacity:.26}
+.badge b{display:block;font-size:11.5px;font-weight:600;color:var(--text-faint);letter-spacing:-.01em}
+.badge .desc{display:block;font-size:9.5px;color:var(--text-faint);opacity:.65;margin-top:3px;line-height:1.35}
+.badge.on{background:rgba(251,191,36,.085);border-color:rgba(251,191,36,.3)}
+.badge.on .ico{filter:none;opacity:1}
+.badge.on b{color:var(--text)}
+.badge.on .desc{opacity:.85}
+.chart-card{padding:22px 20px;margin-bottom:8px}
+.chart-head{margin-bottom:18px;padding:0 4px}
+.chart-head h3{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.chart-head p{font-size:12.5px;color:var(--text-faint);font-weight:300;margin-top:2px}
+.heat-wrap{overflow-x:auto;padding:0 4px 4px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:4px;min-width:min-content}
+.heat-cell{width:14px;height:14px;border-radius:3.5px;background:var(--heat-0);transition:transform .15s ease}
+.heat-cell:hover{transform:scale(1.35)}
+.heat-cell.rest{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(56,189,248,.34)}
+.heat-cell.today{outline:1.5px solid var(--border-hi);outline-offset:1.5px}
+.heat-legend{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:14px;
+  font-size:11px;color:var(--text-faint);padding:0 4px;flex-wrap:wrap}
+.heat-legend .swatch{width:12px;height:12px;border-radius:3px}
+.heat-legend .rest-key{width:12px;height:12px;border-radius:3px;box-shadow:inset 0 0 0 1.5px rgba(56,189,248,.34)}
+.heat-legend .sep{width:1px;height:12px;background:var(--border);margin:0 4px}
+.bars{width:100%;height:auto;display:block;overflow:visible}
+.bars .grid-line{stroke:var(--grid);stroke-width:1}
+.bars .bar{fill:var(--accent);transition:opacity .2s ease}
+.bars .bar-hit{fill:transparent}
+.bars g:hover .bar{opacity:.75}
+.bars .tick-text{fill:rgba(244,243,255,.34);font-size:10px;font-family:var(--font-display);font-variant-numeric:tabular-nums}
+.bars .val-text{fill:rgba(244,243,255,.62);font-size:11px;font-weight:600;font-family:var(--font-display)}
+#chartTip{position:fixed;z-index:90;pointer-events:none;opacity:0;transform:translate(-50%,-120%);
+  padding:8px 12px;border-radius:10px;background:rgba(20,20,32,.96);border:1px solid var(--border-hi);
+  font-size:12.5px;white-space:nowrap;transition:opacity .15s ease;box-shadow:var(--shadow)}
+#chartTip.show{opacity:1}
+#chartTip b{color:var(--accent)}
+.empty-note{text-align:center;color:var(--text-faint);font-size:13.5px;font-weight:300;padding:26px 20px;line-height:1.6}
+
+/* ===== CSS 10. ROUTINE TAB + DRAG ======================== */
+.rest-picker{padding:22px 24px;margin-bottom:16px}
+.rest-picker h3{font-size:15px;font-weight:600;margin-bottom:4px}
+.rest-picker p{font-size:12.5px;color:var(--text-faint);font-weight:300;margin-bottom:16px}
+.days{display:flex;gap:6px}
+.day-btn{flex:1;aspect-ratio:1;max-width:52px;border-radius:12px;background:var(--surface-hi);
+  border:1px solid var(--border);color:var(--text-soft);font-family:inherit;font-size:13px;
+  font-weight:600;cursor:pointer;transition:all .22s ease}
+.day-btn:hover{border-color:var(--border-hi);color:var(--text)}
+.day-btn.rest{background:rgba(56,189,248,.16);border-color:rgba(56,189,248,.5);color:#7dd3fc}
+
+.edit-row{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 4px;position:relative;
+  background:var(--bg);border-radius:var(--radius-sm)}
+.edit-row:not(:last-child)::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:1px;background:var(--border)}
+.edit-row .info{cursor:default}
+/* the grab bar — deliberately wide so a thumb can find it */
+.drag-handle{width:40px;height:46px;flex-shrink:0;display:grid;place-items:center;border:none;
+  background:none;color:var(--text-faint);cursor:grab;border-radius:10px;
+  touch-action:none;                 /* stops the page scrolling while dragging */
+  -webkit-tap-highlight-color:transparent;transition:color .2s ease,background .2s ease}
+.drag-handle:hover{color:var(--text-soft);background:var(--surface-hi)}
+.drag-handle:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;color:var(--text)}
+.drag-handle svg{width:19px;height:19px;fill:currentColor;pointer-events:none}
+.edit-row.dragging{z-index:20;background:#181826;box-shadow:0 20px 44px -12px rgba(0,0,0,.95);
+  border:1px solid var(--border-hi);cursor:grabbing}
+.edit-row.dragging::after{display:none}
+.edit-row.dragging .drag-handle{color:var(--accent);cursor:grabbing}
+.list-card.drag-active{cursor:grabbing}
+.list-card.drag-active .edit-row:not(.dragging){opacity:.55}
+.row-actions{display:flex;gap:6px;flex-shrink:0}
+/* bigger, clearer edit controls */
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;
+  background:var(--surface-hi);border:1px solid var(--border);color:var(--text-soft);cursor:pointer;
+  font-family:inherit;transition:all .2s ease;-webkit-tap-highlight-color:transparent}
+.icon-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.icon-btn:hover{background:rgba(167,139,250,.14);border-color:rgba(167,139,250,.45);color:var(--accent)}
+.icon-btn.del:hover{background:rgba(251,113,133,.13);border-color:rgba(251,113,133,.45);color:var(--danger)}
+.icon-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.form-card{padding:22px;margin-top:16px}
+.form-card h3{font-size:15px;font-weight:600;margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-faint);margin-bottom:6px;font-weight:600}
+.field input{width:100%;padding:12px 14px;border-radius:12px;background:rgba(0,0,0,.28);
+  border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:15px;transition:border-color .2s ease}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field input::placeholder{color:rgba(244,243,255,.24)}
+.field .hint{font-size:11.5px;color:var(--text-faint);margin-top:5px;font-weight:300}
+.field-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.form-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.drag-hint{font-size:12px;color:var(--text-faint);font-weight:300;text-align:center;
+  padding:10px 14px 4px;line-height:1.5}
+
+/* ===== CSS 11. CELEBRATION =============================== */
+#celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px;
+  background:rgba(8,8,15,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s}
+#celebration.show{opacity:1;visibility:visible}
+.celebrate-box{text-align:center;max-width:440px;padding:44px 34px;border-radius:30px;background:var(--surface);
+  border:1px solid var(--border-hi);box-shadow:var(--shadow);transform:scale(.86) translateY(20px);
+  transition:transform .6s cubic-bezier(.16,1,.3,1)}
+#celebration.show .celebrate-box{transform:none}
+.celebrate-box .emoji{font-size:64px;line-height:1;margin-bottom:18px;display:block;animation:bounce 1.4s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-14px) rotate(4deg)}}
+.celebrate-box h2{font-size:clamp(32px,7.5vw,46px);font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-bottom:14px;
+  background:linear-gradient(115deg,var(--success),var(--accent-3),var(--accent));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.celebrate-box h2.record-title{background:linear-gradient(115deg,#fde68a,#fbbf24 55%,#fb923c);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.celebrate-box p{color:var(--text-soft);font-size:16px;font-weight:300;margin-bottom:26px}
+.gains{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px}
+.gains:empty{display:none}
+.gain{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:100px;
+  background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.42);color:#fcd34d;
+  font-size:12.5px;font-weight:600;animation:gainIn .5s cubic-bezier(.34,1.56,.64,1) backwards;animation-delay:var(--gd,0s)}
+.gain.lvl{background:rgba(167,139,250,.16);border-color:rgba(167,139,250,.4);color:var(--accent)}
+@keyframes gainIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+#confetti{position:fixed;inset:0;z-index:100;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));z-index:110;
+  transform:translate(-50%,26px);padding:11px 24px;border-radius:100px;background:rgba(20,20,32,.92);
+  border:1px solid var(--border-hi);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  font-size:14px;font-weight:500;opacity:0;pointer-events:none;text-align:center;
+  max-width:calc(100vw - 36px);transition:opacity .3s ease,transform .45s cubic-bezier(.16,1,.3,1)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ===== CSS 12. TAB BAR =================================== */
+.tabbar{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  z-index:50;display:flex;gap:4px;padding:6px;border-radius:100px;background:rgba(16,16,26,.86);
+  border:1px solid var(--border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow)}
+.tabbar button{display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:100px;background:none;
+  border:none;color:var(--text-faint);font-family:inherit;font-size:13.5px;font-weight:500;cursor:pointer;
+  transition:all .25s ease;white-space:nowrap}
+.tabbar button:hover{color:var(--text-soft)}
+.tabbar button.active{background:linear-gradient(115deg,var(--accent),var(--accent-2));color:#fff;
+  box-shadow:0 6px 20px -6px rgba(167,139,250,.75)}
+.tabbar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+footer{text-align:center;margin-top:30px;font-size:12px;color:var(--text-faint)}
+
+@media (max-width:400px){
+  .tabbar button{padding:10px 13px;font-size:12.5px}
+  .stat b{font-size:22px}
+  .field-row{gap:7px}
+  .icon-btn{width:40px;height:40px}
+  .drag-handle{width:34px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+
+/* ===== CSS 13. WEATHER CARD (Open-Meteo) ================= */
+.weather-card{display:flex;align-items:center;gap:16px;padding:16px 20px;margin-bottom:16px;flex-wrap:wrap}
+.weather-icon{font-size:30px;line-height:1;flex-shrink:0}
+.weather-text{flex:1;min-width:160px}
+.weather-text b{display:block;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.weather-text p{font-size:13px;color:var(--text-soft);font-weight:300;margin-top:2px;line-height:1.4}
+.weather-btn{flex-shrink:0;padding:10px 16px;font-size:13px}
+
+/* ===== CSS 14. CALORIES CARD (API Ninjas) ================ */
+.calories-card{display:flex;align-items:center;gap:16px;padding:18px 20px;margin-top:16px;flex-wrap:wrap}
+.calories-card.muted{opacity:.72}
+.cal-icon{font-size:26px;line-height:1;flex-shrink:0}
+.cal-main{flex:1;min-width:180px}
+.cal-main b{font-size:19px;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.cal-main b span{font-size:12px;font-weight:500;color:var(--text-faint);letter-spacing:.04em}
+.cal-main b.cal-loading{font-size:15px;font-weight:500;color:var(--text-soft)}
+.cal-main p{font-size:13px;color:var(--text-soft);font-weight:300;margin-top:3px;line-height:1.45}
+.cal-main code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;
+  background:var(--surface-hi);border:1px solid var(--border);border-radius:5px;padding:1px 5px}
+.cal-weight{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-faint);
+  letter-spacing:.1em;text-transform:uppercase;flex-shrink:0}
+.cal-weight input{width:64px;padding:7px 8px;border-radius:10px;background:var(--surface-hi);
+  border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:14px;
+  text-align:center;font-variant-numeric:tabular-nums}
+.cal-weight input:focus{outline:none;border-color:var(--accent)}
+
+/* ===== CSS 15. LIBRARY BROWSER (wger) ==================== */
+.library-card{padding:20px;display:flex;flex-direction:column;gap:14px}
+.library-intro b{display:block;font-size:16px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.library-intro p{font-size:13.5px;color:var(--text-soft);font-weight:300;line-height:1.5}
+.library-controls{display:flex;flex-direction:column;gap:10px}
+.library-search{width:100%;padding:12px 14px;border-radius:var(--radius-sm);background:var(--surface-hi);
+  border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:15px}
+.library-search:focus{outline:none;border-color:var(--accent);background:rgba(167,139,250,.07)}
+.library-filters{display:flex;gap:10px;flex-wrap:wrap}
+.library-filters select{flex:1;min-width:130px;padding:10px 12px;border-radius:var(--radius-sm);
+  background:var(--surface-hi);border:1px solid var(--border);color:var(--text);
+  font-family:inherit;font-size:14px;cursor:pointer}
+.library-filters select:focus{outline:none;border-color:var(--accent)}
+.library-results{display:flex;flex-direction:column;max-height:420px;overflow-y:auto;
+  border-radius:var(--radius-sm);border:1px solid var(--border)}
+.library-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;
+  border-bottom:1px solid var(--border)}
+.library-row:last-child{border-bottom:none}
+.library-info{flex:1;min-width:0}
+.library-info b{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.01em}
+.library-meta{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent);margin-top:3px}
+.library-info p{font-size:12.5px;color:var(--text-soft);font-weight:300;line-height:1.45;margin-top:5px}
+.library-add{flex-shrink:0;background:var(--surface-hi);border:1px solid var(--border-hi);
+  color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;padding:8px 13px;
+  border-radius:100px;cursor:pointer;transition:all .2s ease}
+.library-add:hover{background:var(--accent);border-color:var(--accent);color:#160b2e}
+.library-note,.library-loading{font-size:12.5px;color:var(--text-faint);font-weight:300;
+  text-align:center;padding:10px 4px}

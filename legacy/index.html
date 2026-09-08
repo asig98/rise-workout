@@ -1,0 +1,2025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#08080f">
+<title>Rise — Daily Home Workout</title>
+
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Rise">
+<meta name="description" content="Home workouts with guided sets, timers, rest days, streaks and targets that grow as you get stronger.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;800&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap" rel="stylesheet">
+
+<!-- ============================================================
+     MAP OF THIS FILE — search a heading to jump to it
+     ------------------------------------------------------------
+     CSS  1. Tokens          CSS  7. Timer overlay
+     CSS  2. Reset & shell   CSS  8. Guided player
+     CSS  3. Header          CSS  9. Progress tab
+     CSS  4. Quote           CSS 10. Routine tab + drag
+     CSS  5. Ring & rest     CSS 11. Celebration
+     CSS  6. Checklist       CSS 12. Tab bar
+     ------------------------------------------------------------
+     JS  A. Exercise library    JS  G. Guided player
+     JS  B. Your content        JS  H. Progress + charts
+     JS  C. Saving              JS  I. Routine editor + drag
+     JS  D. Levels              JS  J. Confetti & toast
+     JS  E. Today tab           JS  K. Tabs & start-up
+     JS  F. Timer
+     ============================================================ -->
+
+<style>
+/* ===== CSS 1. TOKENS ===================================== */
+:root{
+  --bg:#08080f;
+  --surface:rgba(255,255,255,0.045);
+  --surface-hi:rgba(255,255,255,0.08);
+  --border:rgba(255,255,255,0.10);
+  --border-hi:rgba(255,255,255,0.22);
+  --text:#f4f3ff;
+  --text-soft:rgba(244,243,255,0.62);
+  --text-faint:rgba(244,243,255,0.34);
+  --accent:#a78bfa;
+  --accent-2:#f472b6;
+  --accent-3:#38bdf8;
+  --success:#4ade80;
+  --danger:#fb7185;
+  --rest:#38bdf8;
+  --heat-0:rgba(255,255,255,0.055);
+  --heat-1:#4c3a8a; --heat-2:#6d51c4; --heat-3:#8b6ee6; --heat-4:#a78bfa;
+  --grid:rgba(255,255,255,0.09);
+  --radius:22px; --radius-sm:14px;
+  --shadow:0 24px 60px -18px rgba(0,0,0,0.85);
+  --font-display:'Outfit',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-quote:'Fraunces',Georgia,'Times New Roman',serif;
+}
+
+/* ===== CSS 2. RESET & SHELL ============================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  min-height:100vh;background:var(--bg);color:var(--text);
+  font-family:var(--font-display);line-height:1.55;-webkit-font-smoothing:antialiased;
+  overflow-x:hidden;display:flex;justify-content:center;
+  padding:clamp(16px,4vw,40px) clamp(14px,4vw,24px) calc(96px + env(safe-area-inset-bottom));
+}
+.aurora{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;will-change:transform}
+.blob.one{width:52vmax;height:52vmax;background:radial-gradient(circle,#7c3aed 0%,transparent 68%);top:-18vmax;left:-14vmax;animation:drift1 22s ease-in-out infinite alternate}
+.blob.two{width:46vmax;height:46vmax;background:radial-gradient(circle,#db2777 0%,transparent 68%);bottom:-20vmax;right:-12vmax;animation:drift2 26s ease-in-out infinite alternate}
+.blob.three{width:40vmax;height:40vmax;background:radial-gradient(circle,#0284c7 0%,transparent 68%);top:38%;left:52%;animation:drift3 30s ease-in-out infinite alternate}
+@keyframes drift1{to{transform:translate(12vmax,10vmax) scale(1.15)}}
+@keyframes drift2{to{transform:translate(-14vmax,-8vmax) scale(1.1)}}
+@keyframes drift3{to{transform:translate(-16vmax,12vmax) scale(.85)}}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+.app{width:100%;max-width:620px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:var(--shadow)}
+.rise{opacity:0;animation:rise .7s cubic-bezier(.16,1,.3,1) forwards;animation-delay:var(--d,0s)}
+@keyframes rise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+.view{display:none}
+.view.active{display:block}
+.hidden{display:none !important}
+.section-title{font-size:12px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--text-faint);margin:26px 4px 12px}
+
+/* ===== CSS 3. HEADER ===================================== */
+.eyebrow{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:600;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint);margin-bottom:10px}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--success);
+  box-shadow:0 0 12px var(--success);animation:pulse 2.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+.title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{font-size:clamp(36px,8.5vw,56px);font-weight:800;line-height:.95;letter-spacing:-.035em;
+  background:linear-gradient(115deg,#fff 10%,var(--accent) 55%,var(--accent-2) 95%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.subtitle{color:var(--text-soft);font-size:15px;margin-top:8px;font-weight:300}
+.streak-pill{display:flex;align-items:center;gap:9px;padding:9px 15px;border-radius:100px;
+  background:var(--surface-hi);border:1px solid var(--border);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);white-space:nowrap;flex-shrink:0}
+.streak-pill .flame{font-size:17px;filter:drop-shadow(0 0 8px rgba(251,146,60,.8))}
+.streak-pill b{font-size:17px;font-weight:700}
+.streak-pill span{font-size:12px;color:var(--text-soft)}
+
+/* ===== CSS 4. QUOTE ====================================== */
+.quote-card{position:relative;overflow:hidden;padding:30px 26px 24px;margin:22px 0}
+.quote-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--accent),var(--accent-2),var(--accent-3),transparent);opacity:.9}
+.quote-card::after{content:'"';position:absolute;top:-26px;right:14px;font-family:var(--font-quote);
+  font-size:170px;line-height:1;color:rgba(255,255,255,.045);pointer-events:none;user-select:none}
+#quote{font-family:var(--font-quote);font-size:clamp(19px,4.4vw,26px);line-height:1.36;
+  letter-spacing:-.015em;position:relative;z-index:1}
+#author{margin-top:15px;font-size:12px;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--accent)}
+.quote-swap{animation:swap .5s ease}
+@keyframes swap{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.ghost-btn{background:none;border:1px solid var(--border);color:var(--text-soft);font-family:inherit;
+  font-size:12px;font-weight:500;padding:7px 14px;border-radius:100px;cursor:pointer;transition:all .25s ease}
+.ghost-btn:hover{border-color:var(--border-hi);color:var(--text);background:var(--surface-hi)}
+.newquote{margin-top:16px}
+
+/* ===== CSS 5. RING & REST DAY ============================ */
+.progress-card{padding:22px 24px;margin-bottom:16px;display:flex;align-items:center;gap:20px}
+.ring{position:relative;width:92px;height:92px;flex-shrink:0}
+.ring svg{transform:rotate(-90deg);display:block}
+.ring .track{fill:none;stroke:rgba(255,255,255,.08);stroke-width:9}
+.ring .fill{fill:none;stroke:url(#ringGrad);stroke-width:9;stroke-linecap:round;
+  transition:stroke-dashoffset .9s cubic-bezier(.16,1,.3,1);filter:drop-shadow(0 0 8px rgba(167,139,250,.65))}
+.ring-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring-label b{font-size:23px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.ring-label span{font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}
+.progress-text h2{font-size:18px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.progress-text p{font-size:14px;color:var(--text-soft);font-weight:300}
+
+.rest-card{padding:38px 28px;text-align:center;margin-bottom:20px;position:relative;overflow:hidden}
+.rest-card::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--rest),transparent);opacity:.85}
+.rest-card .moon{font-size:52px;line-height:1;display:block;margin-bottom:16px}
+.rest-card h2{font-size:26px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px}
+.rest-card p{color:var(--text-soft);font-size:15px;font-weight:300;max-width:340px;margin:0 auto 22px}
+.rest-card .safe{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--rest);
+  margin-bottom:22px;padding:6px 14px;border-radius:100px;background:rgba(56,189,248,.1);
+  border:1px solid rgba(56,189,248,.25)}
+
+/* start / shuffle row */
+.action-row{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.action-row .btn{flex:1;min-width:150px;padding:15px 20px;font-size:15px}
+.shuffle-note{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:13px 18px;margin-bottom:16px;border-radius:var(--radius-sm);
+  background:rgba(56,189,248,.09);border:1px solid rgba(56,189,248,.28);
+  font-size:13px;color:#7dd3fc;flex-wrap:wrap}
+.shuffle-note button{background:none;border:1px solid rgba(56,189,248,.4);color:#7dd3fc;
+  font-family:inherit;font-size:12px;font-weight:600;padding:6px 13px;border-radius:100px;
+  cursor:pointer;white-space:nowrap;transition:all .2s ease}
+.shuffle-note button:hover{background:rgba(56,189,248,.16)}
+
+/* ===== CSS 6. CHECKLIST ================================== */
+.list-card{padding:8px;margin-bottom:18px}
+.exercise{display:flex;align-items:center;gap:14px;padding:14px;border-radius:var(--radius-sm);
+  position:relative;transition:background .25s ease;-webkit-tap-highlight-color:transparent}
+.exercise:hover{background:var(--surface-hi)}
+.exercise:not(:last-child)::after{content:"";position:absolute;left:60px;right:14px;bottom:0;height:1px;background:var(--border)}
+.tick{display:flex;align-items:center;gap:14px;flex:1;min-width:0;cursor:pointer}
+.exercise input{position:absolute;opacity:0;pointer-events:none}
+.box{width:30px;height:30px;flex-shrink:0;border:2px solid var(--border-hi);border-radius:10px;
+  display:grid;place-items:center;transition:all .3s cubic-bezier(.34,1.56,.64,1)}
+.box svg{width:17px;height:17px}
+.box svg path{fill:none;stroke:#08080f;stroke-width:3.4;stroke-linecap:round;stroke-linejoin:round;
+  stroke-dasharray:24;stroke-dashoffset:24;transition:stroke-dashoffset .35s ease .08s}
+.info{flex:1;min-width:0;display:flex;flex-direction:column}
+.info .name{font-size:16px;font-weight:500;letter-spacing:-.01em;transition:color .3s ease}
+.info .detail{font-size:13px;color:var(--text-faint);font-weight:300;margin-top:2px;transition:color .3s ease}
+.info .detail .up{color:var(--accent);font-weight:600}
+.exercise input:checked + .box{background:linear-gradient(135deg,var(--success),#22d3ee);border-color:transparent;
+  box-shadow:0 0 22px rgba(74,222,128,.55);animation:pop .42s cubic-bezier(.34,1.56,.64,1)}
+.exercise input:checked + .box svg path{stroke-dashoffset:0}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.32)}100%{transform:scale(1)}}
+.exercise input:checked ~ .info .name{color:var(--text-faint);text-decoration:line-through;
+  text-decoration-color:rgba(74,222,128,.7);text-decoration-thickness:2px}
+.exercise input:checked ~ .info .detail{color:rgba(244,243,255,.2)}
+.exercise input:focus-visible + .box{outline:2px solid var(--accent);outline-offset:3px}
+.timer-chip{flex-shrink:0;display:flex;align-items:center;gap:5px;padding:7px 12px;border-radius:100px;
+  background:var(--surface-hi);border:1px solid var(--border);color:var(--text-soft);font-family:inherit;
+  font-size:12px;font-weight:600;cursor:pointer;transition:all .22s ease}
+.timer-chip:hover{border-color:var(--accent);color:var(--accent);background:rgba(167,139,250,.1)}
+.reset{display:block;margin:0 auto;background:none;border:none;color:var(--text-faint);font-family:inherit;
+  font-size:13px;padding:10px 18px;cursor:pointer;border-radius:100px;transition:color .25s ease,background .25s ease}
+.reset:hover{color:var(--text-soft);background:var(--surface)}
+
+/* ===== CSS 7. TIMER OVERLAY ============================== */
+#timerOverlay{position:fixed;inset:0;z-index:80;display:grid;place-items:center;padding:24px;
+  background:rgba(8,8,15,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s}
+#timerOverlay.show{opacity:1;visibility:visible}
+.timer-box{text-align:center;width:100%;max-width:340px}
+.timer-name{font-size:20px;font-weight:600;letter-spacing:-.02em;margin-bottom:4px}
+.timer-detail{font-size:13px;color:var(--text-faint);margin-bottom:26px}
+.timer-ring{position:relative;width:min(260px,72vw);aspect-ratio:1;margin:0 auto 28px}
+.timer-ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.timer-ring .track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:8}
+.timer-ring .fill{fill:none;stroke:url(#timerGrad);stroke-width:8;stroke-linecap:round;
+  transition:stroke-dashoffset .35s linear;filter:drop-shadow(0 0 14px rgba(167,139,250,.6))}
+.timer-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(52px,15vw,68px);font-weight:300;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.timer-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn{font-family:inherit;font-size:15px;font-weight:600;padding:13px 30px;border-radius:100px;
+  cursor:pointer;border:none;transition:transform .2s ease,box-shadow .2s ease,background .2s ease}
+.btn-primary{background:linear-gradient(115deg,var(--accent),var(--accent-2));color:#fff;
+  box-shadow:0 10px 30px -8px rgba(167,139,250,.7)}
+.btn-primary:hover{transform:translateY(-2px)}
+.btn-quiet{background:var(--surface-hi);border:1px solid var(--border);color:var(--text-soft)}
+.btn-quiet:hover{color:var(--text);border-color:var(--border-hi)}
+
+/* ===== CSS 8. GUIDED PLAYER ============================== */
+#player{position:fixed;inset:0;z-index:95;display:flex;flex-direction:column;
+  background:var(--bg);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s;
+  padding:calc(18px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))}
+#player.show{opacity:1;visibility:visible}
+#player.resting{background:#061019}
+.player-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.player-step{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--text-faint)}
+.player-exit{background:none;border:1px solid var(--border);color:var(--text-faint);font-family:inherit;
+  font-size:12px;padding:7px 14px;border-radius:100px;cursor:pointer;transition:all .2s ease}
+.player-exit:hover{color:var(--text);border-color:var(--border-hi)}
+.player-bar{height:4px;border-radius:100px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:auto}
+.player-bar div{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width .5s cubic-bezier(.16,1,.3,1)}
+.player-mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;gap:6px;padding:16px 0}
+.player-label{font-size:12px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--accent)}
+#player.resting .player-label{color:var(--rest)}
+.player-name{font-size:clamp(28px,7.5vw,42px);font-weight:700;letter-spacing:-.035em;line-height:1.08}
+.player-target{font-size:15px;color:var(--text-soft);font-weight:300;margin-top:2px}
+.player-sets{font-size:12.5px;color:var(--text-faint);margin-top:2px;letter-spacing:.05em}
+.player-ring{position:relative;width:min(230px,60vw);aspect-ratio:1;margin:20px auto 8px}
+.player-ring svg{transform:rotate(-90deg);width:100%;height:100%}
+.player-ring .track{fill:none;stroke:rgba(255,255,255,.07);stroke-width:7}
+.player-ring .fill{fill:none;stroke:url(#timerGrad);stroke-width:7;stroke-linecap:round;
+  transition:stroke-dashoffset .3s linear;filter:drop-shadow(0 0 14px rgba(167,139,250,.55))}
+#player.resting .player-ring .fill{stroke:url(#restGrad);filter:drop-shadow(0 0 14px rgba(56,189,248,.55))}
+.player-count{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:clamp(46px,13vw,62px);font-weight:300;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.player-reps{font-size:clamp(58px,17vw,84px);font-weight:200;letter-spacing:-.05em;line-height:1;margin:24px 0 4px}
+.player-next{font-size:13.5px;color:var(--text-soft);font-weight:300;margin-top:14px}
+.player-next b{color:var(--text);font-weight:600}
+.player-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.player-actions .btn{min-width:126px}
+
+/* ===== CSS 9. PROGRESS TAB =============================== */
+.hero-card{padding:30px 26px;text-align:center;margin-bottom:12px}
+.hero-card .hero-num{font-size:76px;font-weight:800;line-height:1;letter-spacing:-.05em;
+  background:linear-gradient(115deg,#fff,var(--accent) 60%,var(--accent-2));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.hero-card .hero-label{font-size:13px;color:var(--text-soft);margin-top:8px;font-weight:300}
+.level-card{padding:22px 24px;margin-bottom:12px}
+.level-top{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:6px}
+.level-top b{font-size:19px;font-weight:600;letter-spacing:-.02em}
+.level-top span{font-size:12.5px;color:var(--text-faint);font-variant-numeric:tabular-nums}
+.level-card p{font-size:13px;color:var(--text-soft);font-weight:300;margin-bottom:14px}
+.meter{height:8px;border-radius:100px;background:rgba(167,139,250,.16);overflow:hidden}
+.meter-fill{height:100%;border-radius:100px;background:linear-gradient(90deg,var(--accent),var(--accent-2));
+  transition:width .8s cubic-bezier(.16,1,.3,1)}
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:8px}
+.stat{padding:18px 12px;text-align:center}
+.stat b{display:block;font-size:26px;font-weight:600;letter-spacing:-.03em}
+.stat span{display:block;font-size:11px;color:var(--text-faint);margin-top:4px;letter-spacing:.06em;line-height:1.3}
+.record-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.record{padding:16px 8px;text-align:center}
+.record span{display:block;font-size:10px;color:var(--text-faint);margin-top:3px;letter-spacing:.05em;line-height:1.3}
+.record .ico{font-size:19px;margin:0 0 5px;line-height:1}
+.record b{display:block;font-size:25px;font-weight:600;letter-spacing:-.03em}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(94px,1fr));gap:9px;padding:16px}
+.badge{text-align:center;padding:14px 7px;border-radius:var(--radius-sm);background:rgba(255,255,255,.03);
+  border:1px solid var(--border);transition:all .3s ease}
+.badge .ico{display:block;font-size:25px;line-height:1;margin-bottom:8px;filter:grayscale(1);opacity:.26}
+.badge b{display:block;font-size:11.5px;font-weight:600;color:var(--text-faint);letter-spacing:-.01em}
+.badge .desc{display:block;font-size:9.5px;color:var(--text-faint);opacity:.65;margin-top:3px;line-height:1.35}
+.badge.on{background:rgba(251,191,36,.085);border-color:rgba(251,191,36,.3)}
+.badge.on .ico{filter:none;opacity:1}
+.badge.on b{color:var(--text)}
+.badge.on .desc{opacity:.85}
+.chart-card{padding:22px 20px;margin-bottom:8px}
+.chart-head{margin-bottom:18px;padding:0 4px}
+.chart-head h3{font-size:15px;font-weight:600;letter-spacing:-.01em}
+.chart-head p{font-size:12.5px;color:var(--text-faint);font-weight:300;margin-top:2px}
+.heat-wrap{overflow-x:auto;padding:0 4px 4px}
+.heat{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:4px;min-width:min-content}
+.heat-cell{width:14px;height:14px;border-radius:3.5px;background:var(--heat-0);transition:transform .15s ease}
+.heat-cell:hover{transform:scale(1.35)}
+.heat-cell.rest{background:transparent;box-shadow:inset 0 0 0 1.5px rgba(56,189,248,.34)}
+.heat-cell.today{outline:1.5px solid var(--border-hi);outline-offset:1.5px}
+.heat-legend{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:14px;
+  font-size:11px;color:var(--text-faint);padding:0 4px;flex-wrap:wrap}
+.heat-legend .swatch{width:12px;height:12px;border-radius:3px}
+.heat-legend .rest-key{width:12px;height:12px;border-radius:3px;box-shadow:inset 0 0 0 1.5px rgba(56,189,248,.34)}
+.heat-legend .sep{width:1px;height:12px;background:var(--border);margin:0 4px}
+.bars{width:100%;height:auto;display:block;overflow:visible}
+.bars .grid-line{stroke:var(--grid);stroke-width:1}
+.bars .bar{fill:var(--accent);transition:opacity .2s ease}
+.bars .bar-hit{fill:transparent}
+.bars g:hover .bar{opacity:.75}
+.bars .tick-text{fill:rgba(244,243,255,.34);font-size:10px;font-family:var(--font-display);font-variant-numeric:tabular-nums}
+.bars .val-text{fill:rgba(244,243,255,.62);font-size:11px;font-weight:600;font-family:var(--font-display)}
+#chartTip{position:fixed;z-index:90;pointer-events:none;opacity:0;transform:translate(-50%,-120%);
+  padding:8px 12px;border-radius:10px;background:rgba(20,20,32,.96);border:1px solid var(--border-hi);
+  font-size:12.5px;white-space:nowrap;transition:opacity .15s ease;box-shadow:var(--shadow)}
+#chartTip.show{opacity:1}
+#chartTip b{color:var(--accent)}
+.empty-note{text-align:center;color:var(--text-faint);font-size:13.5px;font-weight:300;padding:26px 20px;line-height:1.6}
+
+/* ===== CSS 10. ROUTINE TAB + DRAG ======================== */
+.rest-picker{padding:22px 24px;margin-bottom:16px}
+.rest-picker h3{font-size:15px;font-weight:600;margin-bottom:4px}
+.rest-picker p{font-size:12.5px;color:var(--text-faint);font-weight:300;margin-bottom:16px}
+.days{display:flex;gap:6px}
+.day-btn{flex:1;aspect-ratio:1;max-width:52px;border-radius:12px;background:var(--surface-hi);
+  border:1px solid var(--border);color:var(--text-soft);font-family:inherit;font-size:13px;
+  font-weight:600;cursor:pointer;transition:all .22s ease}
+.day-btn:hover{border-color:var(--border-hi);color:var(--text)}
+.day-btn.rest{background:rgba(56,189,248,.16);border-color:rgba(56,189,248,.5);color:#7dd3fc}
+
+.edit-row{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 4px;position:relative;
+  background:var(--bg);border-radius:var(--radius-sm)}
+.edit-row:not(:last-child)::after{content:"";position:absolute;left:14px;right:14px;bottom:0;height:1px;background:var(--border)}
+.edit-row .info{cursor:default}
+/* the grab bar — deliberately wide so a thumb can find it */
+.drag-handle{width:40px;height:46px;flex-shrink:0;display:grid;place-items:center;border:none;
+  background:none;color:var(--text-faint);cursor:grab;border-radius:10px;
+  touch-action:none;                 /* stops the page scrolling while dragging */
+  -webkit-tap-highlight-color:transparent;transition:color .2s ease,background .2s ease}
+.drag-handle:hover{color:var(--text-soft);background:var(--surface-hi)}
+.drag-handle:focus-visible{outline:2px solid var(--accent);outline-offset:-2px;color:var(--text)}
+.drag-handle svg{width:19px;height:19px;fill:currentColor;pointer-events:none}
+.edit-row.dragging{z-index:20;background:#181826;box-shadow:0 20px 44px -12px rgba(0,0,0,.95);
+  border:1px solid var(--border-hi);cursor:grabbing}
+.edit-row.dragging::after{display:none}
+.edit-row.dragging .drag-handle{color:var(--accent);cursor:grabbing}
+.list-card.drag-active{cursor:grabbing}
+.list-card.drag-active .edit-row:not(.dragging){opacity:.55}
+.row-actions{display:flex;gap:6px;flex-shrink:0}
+/* bigger, clearer edit controls */
+.icon-btn{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;
+  background:var(--surface-hi);border:1px solid var(--border);color:var(--text-soft);cursor:pointer;
+  font-family:inherit;transition:all .2s ease;-webkit-tap-highlight-color:transparent}
+.icon-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;
+  stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.icon-btn:hover{background:rgba(167,139,250,.14);border-color:rgba(167,139,250,.45);color:var(--accent)}
+.icon-btn.del:hover{background:rgba(251,113,133,.13);border-color:rgba(251,113,133,.45);color:var(--danger)}
+.icon-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.form-card{padding:22px;margin-top:16px}
+.form-card h3{font-size:15px;font-weight:600;margin-bottom:16px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-faint);margin-bottom:6px;font-weight:600}
+.field input{width:100%;padding:12px 14px;border-radius:12px;background:rgba(0,0,0,.28);
+  border:1px solid var(--border);color:var(--text);font-family:inherit;font-size:15px;transition:border-color .2s ease}
+.field input:focus{outline:none;border-color:var(--accent)}
+.field input::placeholder{color:rgba(244,243,255,.24)}
+.field .hint{font-size:11.5px;color:var(--text-faint);margin-top:5px;font-weight:300}
+.field-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.form-actions{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.drag-hint{font-size:12px;color:var(--text-faint);font-weight:300;text-align:center;
+  padding:10px 14px 4px;line-height:1.5}
+
+/* ===== CSS 11. CELEBRATION =============================== */
+#celebration{position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:24px;
+  background:rgba(8,8,15,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s}
+#celebration.show{opacity:1;visibility:visible}
+.celebrate-box{text-align:center;max-width:440px;padding:44px 34px;border-radius:30px;background:var(--surface);
+  border:1px solid var(--border-hi);box-shadow:var(--shadow);transform:scale(.86) translateY(20px);
+  transition:transform .6s cubic-bezier(.16,1,.3,1)}
+#celebration.show .celebrate-box{transform:none}
+.celebrate-box .emoji{font-size:64px;line-height:1;margin-bottom:18px;display:block;animation:bounce 1.4s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-14px) rotate(4deg)}}
+.celebrate-box h2{font-size:clamp(32px,7.5vw,46px);font-weight:800;letter-spacing:-.04em;line-height:1.05;margin-bottom:14px;
+  background:linear-gradient(115deg,var(--success),var(--accent-3),var(--accent));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.celebrate-box h2.record-title{background:linear-gradient(115deg,#fde68a,#fbbf24 55%,#fb923c);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.celebrate-box p{color:var(--text-soft);font-size:16px;font-weight:300;margin-bottom:26px}
+.gains{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:20px}
+.gains:empty{display:none}
+.gain{display:inline-flex;align-items:center;gap:6px;padding:8px 15px;border-radius:100px;
+  background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.42);color:#fcd34d;
+  font-size:12.5px;font-weight:600;animation:gainIn .5s cubic-bezier(.34,1.56,.64,1) backwards;animation-delay:var(--gd,0s)}
+.gain.lvl{background:rgba(167,139,250,.16);border-color:rgba(167,139,250,.4);color:var(--accent)}
+@keyframes gainIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:none}}
+#confetti{position:fixed;inset:0;z-index:100;pointer-events:none}
+#toast{position:fixed;left:50%;bottom:calc(104px + env(safe-area-inset-bottom));z-index:110;
+  transform:translate(-50%,26px);padding:11px 24px;border-radius:100px;background:rgba(20,20,32,.92);
+  border:1px solid var(--border-hi);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  font-size:14px;font-weight:500;opacity:0;pointer-events:none;text-align:center;
+  max-width:calc(100vw - 36px);transition:opacity .3s ease,transform .45s cubic-bezier(.16,1,.3,1)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+
+/* ===== CSS 12. TAB BAR =================================== */
+.tabbar{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom));transform:translateX(-50%);
+  z-index:50;display:flex;gap:4px;padding:6px;border-radius:100px;background:rgba(16,16,26,.86);
+  border:1px solid var(--border);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);box-shadow:var(--shadow)}
+.tabbar button{display:flex;align-items:center;gap:7px;padding:10px 18px;border-radius:100px;background:none;
+  border:none;color:var(--text-faint);font-family:inherit;font-size:13.5px;font-weight:500;cursor:pointer;
+  transition:all .25s ease;white-space:nowrap}
+.tabbar button:hover{color:var(--text-soft)}
+.tabbar button.active{background:linear-gradient(115deg,var(--accent),var(--accent-2));color:#fff;
+  box-shadow:0 6px 20px -6px rgba(167,139,250,.75)}
+.tabbar svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+footer{text-align:center;margin-top:30px;font-size:12px;color:var(--text-faint)}
+
+@media (max-width:400px){
+  .tabbar button{padding:10px 13px;font-size:12.5px}
+  .stat b{font-size:22px}
+  .field-row{gap:7px}
+  .icon-btn{width:40px;height:40px}
+  .drag-handle{width:34px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+}
+</style>
+</head>
+
+<body>
+<div class="aurora" aria-hidden="true"><div class="blob one"></div><div class="blob two"></div><div class="blob three"></div></div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#a78bfa"/><stop offset="50%" stop-color="#f472b6"/><stop offset="100%" stop-color="#38bdf8"/>
+  </linearGradient>
+  <linearGradient id="timerGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#a78bfa"/><stop offset="100%" stop-color="#f472b6"/>
+  </linearGradient>
+  <linearGradient id="restGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" stop-color="#38bdf8"/><stop offset="100%" stop-color="#22d3ee"/>
+  </linearGradient>
+</defs></svg>
+
+<main class="app">
+
+  <!-- ============ TAB 1 · TODAY ============ -->
+  <section class="view active" id="view-today">
+    <header class="rise" style="--d:.05s">
+      <div class="eyebrow"><span class="dot"></span><span id="today">Today</span></div>
+      <div class="title-row">
+        <div><h1>Rise.</h1><p class="subtitle" id="todaySub">Your workout, at home, today.</p></div>
+        <div class="streak-pill"><span class="flame">🔥</span><b id="streakCount">0</b><span>day streak</span></div>
+      </div>
+    </header>
+
+    <section class="card quote-card rise" style="--d:.15s">
+      <p id="quote">Loading…</p>
+      <p id="author">—</p>
+      <button class="ghost-btn newquote" id="newQuote">↻ Another one</button>
+    </section>
+
+    <section class="card rest-card rise hidden" id="restCard" style="--d:.25s">
+      <span class="moon">🌙</span>
+      <h2>Rest day</h2>
+      <p>Muscle is built while you recover, not while you train. Taking today off is doing the programme, not skipping it.</p>
+      <div class="safe">🔥 Your streak is safe</div>
+      <div><button class="btn btn-quiet" id="workAnyway">Work out anyway</button></div>
+    </section>
+
+    <div id="trainingBlock">
+      <section class="card progress-card rise" style="--d:.25s">
+        <div class="ring">
+          <svg width="92" height="92" viewBox="0 0 92 92">
+            <circle class="track" cx="46" cy="46" r="38"/>
+            <circle class="fill" cx="46" cy="46" r="38" id="ringFill"/>
+          </svg>
+          <div class="ring-label"><b id="pct">0%</b><span>done</span></div>
+        </div>
+        <div class="progress-text">
+          <h2 id="progressTitle">Let's get moving</h2>
+          <p id="progressSub">0 of 8 exercises complete</p>
+        </div>
+      </section>
+
+      <div class="shuffle-note hidden" id="shuffleNote">
+        <span>🎲 Today's a shuffled workout — your saved routine is untouched.</span>
+        <button id="undoShuffle">Back to my routine</button>
+      </div>
+
+      <div class="action-row rise" style="--d:.3s">
+        <button class="btn btn-primary" id="startGuided">▶  Start workout</button>
+        <button class="btn btn-quiet" id="shuffleBtn">🎲  Surprise me</button>
+      </div>
+
+      <section class="card list-card rise" style="--d:.35s" id="list"></section>
+      <button class="reset" id="reset">Reset today's workout</button>
+    </div>
+
+    <footer>Move a little every day.</footer>
+  </section>
+
+  <!-- ============ TAB 2 · PROGRESS ============ -->
+  <section class="view" id="view-progress">
+    <header style="margin-bottom:20px">
+      <div class="eyebrow"><span class="dot"></span><span>Your progress</span></div>
+      <h1 style="font-size:clamp(30px,7vw,42px)">Progress.</h1>
+    </header>
+
+    <section class="card hero-card">
+      <div class="hero-num" id="heroStreak">0</div>
+      <div class="hero-label" id="heroLabel">day streak — finish today to start one</div>
+    </section>
+
+    <section class="card level-card">
+      <div class="level-top"><b id="levelName">Level 1</b><span id="levelCount">0 / 3 workouts</span></div>
+      <p id="levelText">Every 3 finished workouts, your targets go up a notch.</p>
+      <div class="meter"><div class="meter-fill" id="levelMeter" style="width:0%"></div></div>
+    </section>
+
+    <div class="stat-grid">
+      <div class="card stat"><b id="statTotal">0</b><span>WORKOUTS DONE</span></div>
+      <div class="card stat"><b id="statMonth">0</b><span>THIS MONTH</span></div>
+    </div>
+
+    <div class="section-title">Personal records</div>
+    <div class="record-grid">
+      <div class="card record"><span class="ico">🔥</span><b id="recStreak">0</b><span>LONGEST STREAK</span></div>
+      <div class="card record"><span class="ico">📅</span><b id="recWeek">0</b><span>BEST WEEK</span></div>
+      <div class="card record"><span class="ico">🗓️</span><b id="recMonth">0</b><span>BEST MONTH</span></div>
+    </div>
+
+    <div class="section-title">Last 12 weeks</div>
+    <section class="card chart-card">
+      <div class="chart-head">
+        <h3>Daily completion</h3>
+        <p>Each square is one day. Brighter means more of that day's workout finished. Tap a square for the numbers.</p>
+      </div>
+      <div class="heat-wrap"><div class="heat" id="heat"></div></div>
+      <div class="heat-legend">
+        <span class="rest-key"></span><span>Rest day</span>
+        <span class="sep"></span><span>Less</span>
+        <span class="swatch" style="background:var(--heat-0)"></span>
+        <span class="swatch" style="background:var(--heat-1)"></span>
+        <span class="swatch" style="background:var(--heat-2)"></span>
+        <span class="swatch" style="background:var(--heat-3)"></span>
+        <span class="swatch" style="background:var(--heat-4)"></span>
+        <span>More</span>
+      </div>
+    </section>
+
+    <div class="section-title">Last 8 weeks</div>
+    <section class="card chart-card">
+      <div class="chart-head">
+        <h3>Workouts finished per week</h3>
+        <p>A day counts only when every exercise was ticked off.</p>
+      </div>
+      <div id="barsWrap"></div>
+    </section>
+
+    <div class="section-title">Achievements</div>
+    <section class="card"><div class="badges" id="badges"></div></section>
+
+    <footer>Consistency beats intensity.</footer>
+  </section>
+
+  <!-- ============ TAB 3 · ROUTINE ============ -->
+  <section class="view" id="view-routine">
+    <header style="margin-bottom:20px">
+      <div class="eyebrow"><span class="dot"></span><span>Build your own</span></div>
+      <h1 style="font-size:clamp(30px,7vw,42px)">Routine.</h1>
+    </header>
+
+    <section class="card rest-picker">
+      <h3>Rest days</h3>
+      <p>Tap a day to make it a rest day. Rest days never break your streak.</p>
+      <div class="days" id="days"></div>
+    </section>
+
+    <div class="section-title">Your exercises</div>
+    <section class="card list-card" id="editList"></section>
+    <p class="drag-hint">Hold the dotted handle on the left and drag to reorder.<br>Keyboard: tab to a handle, then use ↑ and ↓.</p>
+
+    <section class="card form-card">
+      <h3 id="formTitle">Add an exercise</h3>
+      <div class="field">
+        <label for="fName">Exercise name</label>
+        <input id="fName" type="text" placeholder="e.g. Burpees" maxlength="40">
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="fSets">Sets</label><input id="fSets" type="number" min="1" max="20" placeholder="3"></div>
+        <div class="field"><label for="fReps">Reps</label><input id="fReps" type="number" min="1" max="500" placeholder="12"></div>
+        <div class="field"><label for="fSeconds">Seconds</label><input id="fSeconds" type="number" min="5" max="3600" step="5" placeholder="45"></div>
+      </div>
+      <p class="hint" style="margin:-4px 0 14px">Fill in <b>reps</b> or <b>seconds</b>, not both. Seconds also adds a ⏱ button.</p>
+      <div class="field">
+        <label for="fStep">Add per level</label>
+        <input id="fStep" type="number" min="0" max="50" placeholder="1">
+        <p class="hint">How much harder this gets each level — e.g. 1 adds one rep, 5 adds five seconds. Leave blank or 0 to keep it fixed.</p>
+      </div>
+      <div class="field">
+        <label for="fNote">Note (optional)</label>
+        <input id="fNote" type="text" placeholder="e.g. each leg" maxlength="30">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" id="saveExercise">Add exercise</button>
+        <button class="btn btn-quiet hidden" id="cancelEdit">Cancel</button>
+      </div>
+    </section>
+
+    <button class="reset" id="restoreDefault" style="margin-top:18px">Restore the starter routine</button>
+    <footer>Your routine is saved on this device.</footer>
+  </section>
+</main>
+
+<!-- ============ GUIDED PLAYER ============ -->
+<div id="player">
+  <div class="player-top">
+    <span class="player-step" id="playerStep">Exercise 1 of 8</span>
+    <button class="player-exit" id="playerExit">Exit</button>
+  </div>
+  <div class="player-bar"><div id="playerBar" style="width:0%"></div></div>
+
+  <div class="player-mid">
+    <span class="player-label" id="playerLabel">Now</span>
+    <div class="player-name" id="playerName">Push-Ups</div>
+    <div class="player-target" id="playerTarget">12 reps</div>
+    <div class="player-sets" id="playerSets">Set 1 of 3</div>
+
+    <div class="player-ring hidden" id="playerRingWrap">
+      <svg viewBox="0 0 200 200">
+        <circle class="track" cx="100" cy="100" r="92"/>
+        <circle class="fill" cx="100" cy="100" r="92" id="playerFill"/>
+      </svg>
+      <div class="player-count" id="playerCount">0:45</div>
+    </div>
+    <div class="player-reps hidden" id="playerReps">12</div>
+    <div class="player-next hidden" id="playerNext"></div>
+  </div>
+
+  <div class="player-actions">
+    <button class="btn btn-primary" id="playerMain">Done</button>
+    <button class="btn btn-quiet" id="playerSkip">Skip</button>
+  </div>
+</div>
+
+<!-- ============ OTHER OVERLAYS ============ -->
+<div id="timerOverlay">
+  <div class="timer-box">
+    <div class="timer-name" id="timerName">Plank Hold</div>
+    <div class="timer-detail" id="timerDetail">3 sets × 45 seconds</div>
+    <div class="timer-ring">
+      <svg viewBox="0 0 200 200">
+        <circle class="track" cx="100" cy="100" r="92"/>
+        <circle class="fill" cx="100" cy="100" r="92" id="timerFill"/>
+      </svg>
+      <div class="timer-count" id="timerCount">0:45</div>
+    </div>
+    <div class="timer-actions">
+      <button class="btn btn-primary" id="timerToggle">Start</button>
+      <button class="btn btn-quiet" id="timerClose">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="celebration">
+  <div class="celebrate-box">
+    <span class="emoji" id="celebrateEmoji">🎉</span>
+    <h2 id="celebrateTitle">GREAT JOB!</h2>
+    <div class="gains" id="gains"></div>
+    <p id="celebrateMsg">You finished every exercise today. That's a win.</p>
+    <button class="btn btn-primary" id="closeCelebrate">Keep it going</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="chartTip"></div>
+
+<nav class="tabbar">
+  <button class="active" data-view="today"><svg viewBox="0 0 24 24"><path d="M4 12.5 9 17.5 20 6.5"/></svg>Today</button>
+  <button data-view="progress"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Progress</button>
+  <button data-view="routine"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h9"/></svg>Routine</button>
+</nav>
+
+<script>
+/* ============================================================
+   JS A — THE EXERCISE LIBRARY
+   Everything here needs no equipment and fits in a small room.
+   `cat` groups them so a shuffled workout comes out balanced
+   instead of, say, six ab exercises in a row.
+   ============================================================ */
+const LIBRARY = [
+  // ---- warm up ----
+  { id:"wu1", cat:"warmup", name:"Arm Circles",        sets:1, reps:null, seconds:45,  step:5, note:"forwards then back" },
+  { id:"wu2", cat:"warmup", name:"Jumping Jacks",      sets:1, reps:null, seconds:60,  step:5, note:"" },
+  { id:"wu3", cat:"warmup", name:"March in Place",     sets:1, reps:null, seconds:60,  step:5, note:"knees high" },
+  { id:"wu4", cat:"warmup", name:"Leg Swings",         sets:1, reps:null, seconds:45,  step:5, note:"each leg" },
+  { id:"wu5", cat:"warmup", name:"Shoulder Rolls",     sets:1, reps:null, seconds:40,  step:5, note:"" },
+  { id:"wu6", cat:"warmup", name:"Hip Circles",        sets:1, reps:null, seconds:45,  step:5, note:"" },
+  { id:"wu7", cat:"warmup", name:"Torso Twists",       sets:1, reps:null, seconds:45,  step:5, note:"" },
+  { id:"wu8", cat:"warmup", name:"Butt Kicks",         sets:1, reps:null, seconds:45,  step:5, note:"" },
+
+  // ---- cardio ----
+  { id:"ca1", cat:"cardio", name:"High Knees",         sets:3, reps:null, seconds:40,  step:5, note:"" },
+  { id:"ca2", cat:"cardio", name:"Mountain Climbers",  sets:3, reps:null, seconds:30,  step:5, note:"" },
+  { id:"ca3", cat:"cardio", name:"Burpees",            sets:3, reps:8,    seconds:null,step:1, note:"" },
+  { id:"ca4", cat:"cardio", name:"Skater Hops",        sets:3, reps:null, seconds:40,  step:5, note:"side to side" },
+  { id:"ca5", cat:"cardio", name:"Star Jumps",         sets:3, reps:null, seconds:35,  step:5, note:"" },
+  { id:"ca6", cat:"cardio", name:"Fast Feet",          sets:3, reps:null, seconds:30,  step:5, note:"" },
+  { id:"ca7", cat:"cardio", name:"Shadow Boxing",      sets:3, reps:null, seconds:60,  step:5, note:"" },
+  { id:"ca8", cat:"cardio", name:"Squat Jumps",        sets:3, reps:10,   seconds:null,step:1, note:"" },
+  { id:"ca9", cat:"cardio", name:"Plank Jacks",        sets:3, reps:null, seconds:30,  step:5, note:"" },
+
+  // ---- upper body ----
+  { id:"up1", cat:"push",   name:"Push-Ups",           sets:3, reps:12,   seconds:null,step:1, note:"" },
+  { id:"up2", cat:"push",   name:"Knee Push-Ups",      sets:3, reps:12,   seconds:null,step:1, note:"" },
+  { id:"up3", cat:"push",   name:"Incline Push-Ups",   sets:3, reps:12,   seconds:null,step:1, note:"hands on a chair" },
+  { id:"up4", cat:"push",   name:"Diamond Push-Ups",   sets:3, reps:8,    seconds:null,step:1, note:"" },
+  { id:"up5", cat:"push",   name:"Wide Push-Ups",      sets:3, reps:12,   seconds:null,step:1, note:"" },
+  { id:"up6", cat:"push",   name:"Pike Push-Ups",      sets:3, reps:8,    seconds:null,step:1, note:"shoulders" },
+  { id:"up7", cat:"push",   name:"Tricep Dips",        sets:3, reps:12,   seconds:null,step:1, note:"off a chair" },
+  { id:"up8", cat:"push",   name:"Wall Push-Ups",      sets:3, reps:15,   seconds:null,step:2, note:"" },
+  { id:"up9", cat:"push",   name:"Plank Shoulder Taps",sets:3, reps:20,   seconds:null,step:2, note:"" },
+  { id:"up10",cat:"push",   name:"Superman Hold",      sets:3, reps:null, seconds:30,  step:5, note:"back" },
+  { id:"up11",cat:"push",   name:"Arm Haulers",        sets:3, reps:null, seconds:30,  step:5, note:"" },
+  { id:"up12",cat:"push",   name:"Prone Y-Raise",      sets:3, reps:12,   seconds:null,step:1, note:"upper back" },
+
+  // ---- legs ----
+  { id:"lg1", cat:"legs",   name:"Bodyweight Squats",  sets:3, reps:15,   seconds:null,step:2, note:"" },
+  { id:"lg2", cat:"legs",   name:"Forward Lunges",     sets:3, reps:10,   seconds:null,step:1, note:"each leg" },
+  { id:"lg3", cat:"legs",   name:"Reverse Lunges",     sets:3, reps:10,   seconds:null,step:1, note:"each leg" },
+  { id:"lg4", cat:"legs",   name:"Split Squats",       sets:3, reps:10,   seconds:null,step:1, note:"each leg" },
+  { id:"lg5", cat:"legs",   name:"Glute Bridges",      sets:3, reps:15,   seconds:null,step:2, note:"" },
+  { id:"lg6", cat:"legs",   name:"Single-Leg Bridge",  sets:3, reps:10,   seconds:null,step:1, note:"each leg" },
+  { id:"lg7", cat:"legs",   name:"Wall Sit",           sets:3, reps:null, seconds:45,  step:5, note:"" },
+  { id:"lg8", cat:"legs",   name:"Calf Raises",        sets:3, reps:20,   seconds:null,step:2, note:"" },
+  { id:"lg9", cat:"legs",   name:"Sumo Squats",        sets:3, reps:15,   seconds:null,step:2, note:"wide stance" },
+  { id:"lg10",cat:"legs",   name:"Step-Ups",           sets:3, reps:12,   seconds:null,step:1, note:"each leg" },
+  { id:"lg11",cat:"legs",   name:"Curtsy Lunges",      sets:3, reps:10,   seconds:null,step:1, note:"each leg" },
+  { id:"lg12",cat:"legs",   name:"Donkey Kicks",       sets:3, reps:15,   seconds:null,step:2, note:"each leg" },
+  { id:"lg13",cat:"legs",   name:"Fire Hydrants",      sets:3, reps:15,   seconds:null,step:2, note:"each leg" },
+  { id:"lg14",cat:"legs",   name:"Side Lunges",        sets:3, reps:10,   seconds:null,step:1, note:"each leg" },
+  { id:"lg15",cat:"legs",   name:"Chair Squats",       sets:3, reps:12,   seconds:null,step:1, note:"" },
+
+  // ---- core ----
+  { id:"co1", cat:"core",   name:"Plank Hold",         sets:3, reps:null, seconds:45,  step:5, note:"" },
+  { id:"co2", cat:"core",   name:"Side Plank",         sets:3, reps:null, seconds:30,  step:5, note:"each side" },
+  { id:"co3", cat:"core",   name:"Bicycle Crunches",   sets:3, reps:20,   seconds:null,step:2, note:"" },
+  { id:"co4", cat:"core",   name:"Dead Bug",           sets:3, reps:12,   seconds:null,step:1, note:"each side" },
+  { id:"co5", cat:"core",   name:"Bird Dog",           sets:3, reps:12,   seconds:null,step:1, note:"each side" },
+  { id:"co6", cat:"core",   name:"Russian Twists",     sets:3, reps:20,   seconds:null,step:2, note:"" },
+  { id:"co7", cat:"core",   name:"Leg Raises",         sets:3, reps:12,   seconds:null,step:1, note:"" },
+  { id:"co8", cat:"core",   name:"Flutter Kicks",      sets:3, reps:null, seconds:30,  step:5, note:"" },
+  { id:"co9", cat:"core",   name:"Hollow Hold",        sets:3, reps:null, seconds:30,  step:5, note:"" },
+  { id:"co10",cat:"core",   name:"Crunches",           sets:3, reps:20,   seconds:null,step:2, note:"" },
+  { id:"co11",cat:"core",   name:"Reverse Crunches",   sets:3, reps:15,   seconds:null,step:2, note:"" },
+  { id:"co12",cat:"core",   name:"Toe Touches",        sets:3, reps:20,   seconds:null,step:2, note:"" },
+  { id:"co13",cat:"core",   name:"V-Ups",              sets:3, reps:10,   seconds:null,step:1, note:"" },
+
+  // ---- cool down ----
+  { id:"cd1", cat:"cooldown",name:"Hamstring Stretch", sets:1, reps:null, seconds:60,  step:0, note:"each leg" },
+  { id:"cd2", cat:"cooldown",name:"Quad Stretch",      sets:1, reps:null, seconds:60,  step:0, note:"each leg" },
+  { id:"cd3", cat:"cooldown",name:"Child's Pose",      sets:1, reps:null, seconds:60,  step:0, note:"" },
+  { id:"cd4", cat:"cooldown",name:"Cat-Cow",           sets:1, reps:null, seconds:45,  step:0, note:"" },
+  { id:"cd5", cat:"cooldown",name:"Chest Opener",      sets:1, reps:null, seconds:45,  step:0, note:"" },
+  { id:"cd6", cat:"cooldown",name:"Figure-Four Stretch",sets:1,reps:null, seconds:60,  step:0, note:"each side" },
+  { id:"cd7", cat:"cooldown",name:"Downward Dog",      sets:1, reps:null, seconds:45,  step:0, note:"" },
+  { id:"cd8", cat:"cooldown",name:"Neck Rolls",        sets:1, reps:null, seconds:40,  step:0, note:"slow" }
+];
+
+// The starter routine everyone begins with
+const DEFAULT_ROUTINE = [
+  { id:"e1", name:"Jumping Jacks",       sets:1, reps:null, seconds:60,  step:5, note:"warm up" },
+  { id:"e2", name:"Push-Ups",            sets:3, reps:12,   seconds:null,step:1, note:"" },
+  { id:"e3", name:"Bodyweight Squats",   sets:3, reps:15,   seconds:null,step:2, note:"" },
+  { id:"e4", name:"Plank Hold",          sets:3, reps:null, seconds:45,  step:5, note:"" },
+  { id:"e5", name:"Forward Lunges",      sets:3, reps:10,   seconds:null,step:1, note:"each leg" },
+  { id:"e6", name:"Glute Bridges",       sets:3, reps:15,   seconds:null,step:2, note:"" },
+  { id:"e7", name:"Mountain Climbers",   sets:3, reps:null, seconds:30,  step:5, note:"" },
+  { id:"e8", name:"Child's Pose",        sets:1, reps:null, seconds:300, step:0, note:"cool down" }
+];
+
+/* Build a balanced workout instead of picking at random from the whole
+   list — random alone gives you three warm-ups and no legs. */
+const RECIPE = [
+  ["warmup",1], ["cardio",1], ["push",2], ["legs",2], ["core",2], ["cooldown",1]
+];
+function shuffled(arr){
+  const a = arr.slice();
+  for(let i = a.length-1; i > 0; i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function generateWorkout(){
+  const plan = [];
+  RECIPE.forEach(([cat, n]) => {
+    shuffled(LIBRARY.filter(e => e.cat === cat)).slice(0, n)
+      .forEach(e => plan.push(Object.assign({}, e)));   // a copy, so edits can't touch the library
+  });
+  return plan;
+}
+
+
+/* ============================================================
+   JS B — YOUR CONTENT
+   ============================================================ */
+const QUOTES = [
+  { t:"The body achieves what the mind believes.", a:"Napoleon Hill" },
+  { t:"It never gets easier. You just get stronger.", a:"Unknown" },
+  { t:"Discipline is choosing between what you want now and what you want most.", a:"Abraham Lincoln" },
+  { t:"You don't have to be extreme, just consistent.", a:"Unknown" },
+  { t:"The only bad workout is the one that didn't happen.", a:"Unknown" },
+  { t:"Take care of your body. It's the only place you have to live.", a:"Jim Rohn" },
+  { t:"Small daily improvements are the key to staggering long-term results.", a:"Unknown" },
+  { t:"Motivation gets you started. Habit keeps you going.", a:"Jim Ryun" },
+  { t:"Your only limit is you.", a:"Unknown" },
+  { t:"Strength does not come from what you can do. It comes from overcoming what you thought you couldn't.", a:"Rikki Rogers" },
+  { t:"Don't wish for it. Work for it.", a:"Unknown" },
+  { t:"Rest when you're weary. Refresh and renew yourself. Then get back to work.", a:"Ralph Marston" },
+  { t:"Success is the sum of small efforts repeated day in and day out.", a:"Robert Collier" },
+  { t:"The hardest lift of all is lifting yourself off the couch.", a:"Unknown" },
+  { t:"You are one workout away from a good mood.", a:"Unknown" },
+  { t:"Fall in love with taking care of yourself.", a:"Unknown" },
+  { t:"The difference between try and triumph is a little umph.", a:"Marvin Phillips" },
+  { t:"Nothing will work unless you do.", a:"Maya Angelou" },
+  { t:"Push yourself, because no one else is going to do it for you.", a:"Unknown" },
+  { t:"Energy and persistence conquer all things.", a:"Benjamin Franklin" },
+  { t:"Do something today that your future self will thank you for.", a:"Sean Patrick Flanery" },
+  { t:"The pain you feel today will be the strength you feel tomorrow.", a:"Unknown" },
+  { t:"Wake up with determination. Go to bed with satisfaction.", a:"Unknown" },
+  { t:"Good things come to those who sweat.", a:"Unknown" },
+  { t:"If it doesn't challenge you, it won't change you.", a:"Fred DeVito" },
+  { t:"Fitness is not about being better than someone else. It's about being better than you used to be.", a:"Unknown" },
+  { t:"We are what we repeatedly do. Excellence, then, is not an act, but a habit.", a:"Will Durant" },
+  { t:"Believe you can and you're halfway there.", a:"Theodore Roosevelt" },
+  { t:"Start where you are. Use what you have. Do what you can.", a:"Arthur Ashe" },
+  { t:"The groundwork for all happiness is good health.", a:"Leigh Hunt" },
+  { t:"Every workout is progress, no matter how small.", a:"Unknown" },
+  { t:"Rome wasn't built in a day, but they worked on it every single day.", a:"Unknown" },
+  { t:"Your body can stand almost anything. It's your mind you have to convince.", a:"Unknown" },
+  { t:"Sore today, strong tomorrow.", a:"Unknown" },
+  { t:"Change happens at the end of your comfort zone.", a:"Roy T. Bennett" },
+  { t:"Don't stop when you're tired. Stop when you're done.", a:"Unknown" }
+];
+const NUDGES = ["Nice one! 💪","Keep going!","That's one down.","Strong work!","Yes! 🔥","Love that.","Momentum!","One rep closer."];
+const WINS   = ["GREAT JOB!","YOU CRUSHED IT!","WORKOUT COMPLETE!","LEGEND!","THAT'S A WIN!"];
+const DAY_NAMES = ["S","M","T","W","T","F","S"];
+const DAY_FULL  = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const PER_LEVEL = 3, MAX_LEVEL = 12;
+const SET_REST = 20, EX_REST = 30;      // seconds of rest in guided mode
+
+
+/* ============================================================
+   JS C — SAVING
+     S.routine    the saved exercise list
+     S.todayPlan  a shuffled one-day workout, or null
+     S.restDays   [0..6] weekdays off (0 = Sunday)
+     S.today      { date, done:[ids], override }
+     S.history    { "2026-09-08": {c,t} }
+   ============================================================ */
+const KEY = "rise-v2";
+let memoryFallback = null;
+
+function pad(n){ return String(n).padStart(2,"0"); }
+function dateKey(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function todayKey(){ return dateKey(new Date()); }
+
+function loadRaw(){
+  try{ const raw = localStorage.getItem(KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return memoryFallback;
+}
+function save(){
+  memoryFallback = S;
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){}
+}
+
+let S = loadRaw() || {
+  routine: JSON.parse(JSON.stringify(DEFAULT_ROUTINE)),
+  todayPlan: null,
+  restDays: [0],
+  today: { date: todayKey(), done: [], override:false },
+  history: {}
+};
+
+/* --- Migration: fill in anything an older save is missing --- */
+(function migrate(){
+  if(!Array.isArray(S.restDays)) S.restDays = [0];
+  if(!S.today) S.today = { date: todayKey(), done: [], override:false };
+  if(!S.history) S.history = {};
+  if(!Array.isArray(S.routine)) S.routine = JSON.parse(JSON.stringify(DEFAULT_ROUTINE));
+  if(S.todayPlan === undefined) S.todayPlan = null;
+
+  S.routine.forEach(e => {
+    if(e.sets    === undefined) e.sets = 1;
+    if(e.reps    === undefined) e.reps = null;
+    if(e.seconds === undefined) e.seconds = null;
+    if(e.step    === undefined) e.step = 0;
+
+    // The oldest saves kept one free-text line like "3 sets × 45 seconds".
+    // Pull real numbers out of it so levels have something to grow.
+    if(e.note === undefined){
+      const old = e.detail || "";
+      const setsM = old.match(/(\d+)\s*sets?/i);
+      if(setsM) e.sets = Math.min(20, parseInt(setsM[1],10));
+      if(e.seconds == null){
+        const secM = old.match(/(\d+)\s*(?:seconds?|secs?)\b/i);
+        const minM = old.match(/(\d+)\s*(?:minutes?|mins?)\b/i);
+        if(secM)      e.seconds = parseInt(secM[1],10);
+        else if(minM) e.seconds = parseInt(minM[1],10) * 60;
+      }
+      if(e.seconds == null && e.reps == null){
+        const repM = old.match(/[×x]\s*(\d+)/i);
+        if(repM) e.reps = parseInt(repM[1],10);
+      }
+      // Strip the time phrase first, or "× 45 seconds" loses its number
+      // to the "× N" rule and leaves a stray "seconds".
+      e.note = old
+        .replace(/\d+\s*(?:seconds?|secs?|minutes?|mins?)/ig,"")
+        .replace(/\d+\s*sets?/ig,"")
+        .replace(/[×x]\s*\d*/ig,"")
+        .replace(/\s+/g," ")
+        .replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g,"")
+        .trim();
+      if(e.step === 0){
+        if(e.seconds)   e.step = 5;
+        else if(e.reps) e.step = 1;
+      }
+    }
+    delete e.detail;
+  });
+  save();
+})();
+
+// New day: clear the ticks and drop yesterday's shuffle
+if(S.today.date !== todayKey()){
+  S.today = { date: todayKey(), done: [], override:false };
+  S.todayPlan = null;
+}
+
+/* The list Today actually uses — a shuffle if one is active, else the
+   saved routine. Everything on the Today tab goes through this, so a
+   shuffle can never overwrite what someone built. */
+function activeRoutine(){ return S.todayPlan || S.routine; }
+function isShuffled(){ return !!S.todayPlan; }
+
+S.today.done = S.today.done.filter(id => activeRoutine().some(e => e.id === id));
+
+function isRestDay(d){ return S.restDays.includes(d.getDay()); }
+function restToday(){ return isRestDay(new Date()) && !S.today.override; }
+
+function recordToday(){
+  const k = todayKey();
+  if(restToday() && S.today.done.length === 0) delete S.history[k];
+  else S.history[k] = { c: S.today.done.length, t: activeRoutine().length };
+  save();
+}
+
+
+/* ============================================================
+   JS D — LEVELS (progressive overload)
+   ============================================================ */
+function dayComplete(key){
+  const h = S.history[key];
+  return !!(h && h.t > 0 && h.c >= h.t);
+}
+function totalDone(){ return Object.keys(S.history).filter(dayComplete).length; }
+function levelNow(){ return Math.min(MAX_LEVEL, Math.floor(totalDone()/PER_LEVEL)); }
+function exReps(ex, lvl){ return ex.reps    ? ex.reps    + (ex.step||0)*lvl : null; }
+function exSecs(ex, lvl){ return ex.seconds ? ex.seconds + (ex.step||0)*lvl : null; }
+function fmtTime(sec){
+  const m = Math.floor(sec/60), s = sec % 60;
+  return m ? (s ? m+":"+pad(s) : m+":00") : "0:"+pad(s);
+}
+function exDetail(ex, lvl){
+  const secs = exSecs(ex,lvl), reps = exReps(ex,lvl);
+  const setPart = (ex.sets && ex.sets > 1) ? ex.sets + " sets × " : "";
+  let base = secs ? setPart + fmtTime(secs) : reps ? setPart + reps : "";
+  if(ex.note) base = base ? base + " · " + ex.note : ex.note;
+  return base || "—";
+}
+function hasGrown(ex, lvl){ return (ex.step||0) > 0 && lvl > 0 && (ex.reps || ex.seconds); }
+
+
+/* ============================================================
+   RECORDS & ACHIEVEMENTS  (all derived — nothing extra to log)
+   ============================================================ */
+function weekStart(d){
+  const s = new Date(d); s.setHours(0,0,0,0);
+  s.setDate(s.getDate() - ((s.getDay()+6)%7));
+  return s;
+}
+function bestWeek(){
+  const b = {};
+  Object.keys(S.history).filter(dayComplete).forEach(k => {
+    const w = dateKey(weekStart(new Date(k+"T00:00:00")));
+    b[w] = (b[w]||0)+1;
+  });
+  const v = Object.values(b); return v.length ? Math.max(...v) : 0;
+}
+function bestMonth(){
+  const b = {};
+  Object.keys(S.history).filter(dayComplete).forEach(k => { b[k.slice(0,7)] = (b[k.slice(0,7)]||0)+1; });
+  const v = Object.values(b); return v.length ? Math.max(...v) : 0;
+}
+function hadPerfectWeek(){
+  const thisWeek = dateKey(weekStart(new Date()));
+  const today = new Date(); today.setHours(0,0,0,0);
+  const weeks = new Set();
+  Object.keys(S.history).filter(dayComplete).forEach(k =>
+    weeks.add(dateKey(weekStart(new Date(k+"T00:00:00")))));
+  for(const w of weeks){
+    if(w === thisWeek) continue;
+    const start = new Date(w+"T00:00:00");
+    let train = 0, done = 0, finished = true;
+    for(let i=0;i<7;i++){
+      const d = new Date(start); d.setDate(start.getDate()+i);
+      if(d > today){ finished = false; break; }
+      if(isRestDay(d)) continue;
+      train++;
+      if(dayComplete(dateKey(d))) done++;
+    }
+    if(finished && train > 0 && done === train) return true;
+  }
+  return false;
+}
+function snapshot(){
+  return { streak:bestStreak(), week:bestWeek(), month:bestMonth(),
+           total:totalDone(), level:levelNow(), perfect:hadPerfectWeek() };
+}
+const BADGES = [
+  { id:"first",  icon:"🌱", name:"First Step",    desc:"Finish one workout",  test:s=>s.total>=1   },
+  { id:"w10",    icon:"💪", name:"Perfect Ten",   desc:"10 workouts",         test:s=>s.total>=10  },
+  { id:"w25",    icon:"🎯", name:"Twenty-Five",   desc:"25 workouts",         test:s=>s.total>=25  },
+  { id:"w50",    icon:"🏋️", name:"Half Century",  desc:"50 workouts",         test:s=>s.total>=50  },
+  { id:"w100",   icon:"💯", name:"Century Club",  desc:"100 workouts",        test:s=>s.total>=100 },
+  { id:"s7",     icon:"🔥", name:"Week Warrior",  desc:"7-day streak",        test:s=>s.streak>=7  },
+  { id:"s30",    icon:"⚡", name:"Unstoppable",   desc:"30-day streak",       test:s=>s.streak>=30 },
+  { id:"perfect",icon:"✨", name:"Perfect Week",  desc:"Every training day",  test:s=>s.perfect    },
+  { id:"lvl5",   icon:"📈", name:"Levelling Up",  desc:"Reach level 5",       test:s=>s.level>=4   },
+  { id:"lvlmax", icon:"👑", name:"Maxed Out",     desc:"Reach the top level", test:s=>s.level>=MAX_LEVEL }
+];
+function earnedBadges(s){ return BADGES.filter(b => b.test(s)); }
+
+/* Milestones, not "every time the streak grows" — someone training daily
+   beats their longest streak daily, and a trophy that fires every day is
+   not a trophy. 7 and 30 are left out; badges already fire there. */
+const STREAK_MILESTONES = [3,5,10,14,21,50,75,100,150,200,365];
+function diffGains(before){
+  const after = snapshot();
+  const records = [];
+  if(after.streak > before.streak && STREAK_MILESTONES.includes(after.streak))
+    records.push("🔥 " + after.streak + "-day streak");
+  if(after.week  > before.week  && after.week  >= 3) records.push("📅 Best week: " + after.week);
+  if(after.month > before.month && after.month >= 5) records.push("🗓️ Best month: " + after.month);
+  const had = earnedBadges(before).map(b => b.id);
+  return { records, badges: earnedBadges(after).filter(b => !had.includes(b.id)),
+           leveled: after.level > before.level };
+}
+function currentStreak(){
+  let n = 0, guard = 0;
+  const d = new Date();
+  if(!dayComplete(todayKey())) d.setDate(d.getDate()-1);
+  while(guard++ < 400){
+    if(dayComplete(dateKey(d)))  { n++; d.setDate(d.getDate()-1); }
+    else if(isRestDay(d))        {      d.setDate(d.getDate()-1); }
+    else break;
+  }
+  return n;
+}
+function bestStreak(){
+  const keys = Object.keys(S.history).sort();
+  if(!keys.length) return 0;
+  let best = 0, run = 0, guard = 0;
+  const d = new Date(keys[0]+"T00:00:00");
+  const end = new Date(); end.setHours(0,0,0,0);
+  while(d <= end && guard++ < 4000){
+    if(dayComplete(dateKey(d)))  { run++; best = Math.max(best, run); }
+    else if(!isRestDay(d))       { run = 0; }
+    d.setDate(d.getDate()+1);
+  }
+  return best;
+}
+
+
+/* ============================================================
+   JS E — THE TODAY TAB
+   ============================================================ */
+let quoteOffset = 0;
+function showQuote(animate){
+  const days = Math.floor(Date.now()/86400000);
+  const q = QUOTES[(days + quoteOffset) % QUOTES.length];
+  const el = document.getElementById("quote");
+  el.textContent = q.t;
+  document.getElementById("author").textContent = "— " + q.a;
+  if(animate){ el.classList.remove("quote-swap"); void el.offsetWidth; el.classList.add("quote-swap"); }
+}
+document.getElementById("newQuote").addEventListener("click", () => { quoteOffset++; showQuote(true); });
+
+const listEl  = document.getElementById("list");
+const restEl  = document.getElementById("restCard");
+const trainEl = document.getElementById("trainingBlock");
+
+function renderToday(){
+  const resting = restToday();
+  restEl.classList.toggle("hidden", !resting);
+  trainEl.classList.toggle("hidden", resting);
+  document.getElementById("todaySub").textContent =
+    resting ? "Today is a rest day. That's on purpose." : "Your workout, at home, today.";
+  document.getElementById("shuffleNote").classList.toggle("hidden", !isShuffled());
+  if(!resting) renderList();
+  document.getElementById("streakCount").textContent = currentStreak();
+}
+
+function renderList(){
+  const lvl = levelNow();
+  const routine = activeRoutine();
+  listEl.innerHTML = "";
+
+  if(routine.length === 0){
+    listEl.innerHTML = '<p class="empty-note">No exercises yet.<br>Head to the Routine tab to add some.</p>';
+    updateProgress();
+    return;
+  }
+
+  routine.forEach(ex => {
+    const row = document.createElement("div");
+    row.className = "exercise";
+    row.innerHTML = `
+      <label class="tick">
+        <input type="checkbox" ${S.today.done.includes(ex.id) ? "checked" : ""}>
+        <span class="box"><svg viewBox="0 0 24 24"><path d="M4 12.5 L9.5 18 L20 6.5"/></svg></span>
+        <span class="info"><span class="name"></span><span class="detail"></span></span>
+      </label>`;
+    row.querySelector(".name").textContent = ex.name;
+    const det = row.querySelector(".detail");
+    det.textContent = exDetail(ex, lvl);
+    if(hasGrown(ex, lvl)){
+      const up = document.createElement("span");
+      up.className = "up"; up.textContent = "  ▲"; up.title = "Increased since level 0";
+      det.appendChild(up);
+    }
+    const secs = exSecs(ex, lvl);
+    if(secs){
+      const chip = document.createElement("button");
+      chip.className = "timer-chip";
+      chip.textContent = "⏱ " + fmtTime(secs);
+      chip.addEventListener("click", () => openTimer(ex));
+      row.appendChild(chip);
+    }
+    row.querySelector("input").addEventListener("change", e => onToggle(e.target, ex.id));
+    listEl.appendChild(row);
+  });
+  updateProgress();
+}
+
+function onToggle(input, id){
+  const before = snapshot();
+  if(input.checked){
+    if(!S.today.done.includes(id)) S.today.done.push(id);
+    const r = input.nextElementSibling.getBoundingClientRect();
+    burst(r.left + r.width/2, r.top + r.height/2, 26);
+    toast(NUDGES[Math.floor(Math.random()*NUDGES.length)]);
+    if(navigator.vibrate) navigator.vibrate(18);
+  } else {
+    S.today.done = S.today.done.filter(x => x !== id);
+  }
+  recordToday();
+  updateProgress(before);
+}
+
+function updateProgress(before){
+  const total = activeRoutine().length, done = S.today.done.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+
+  const circ = 2*Math.PI*38;
+  const ring = document.getElementById("ringFill");
+  ring.style.strokeDasharray  = circ;
+  ring.style.strokeDashoffset = total ? circ*(1 - done/total) : circ;
+
+  document.getElementById("pct").textContent = pct + "%";
+  document.getElementById("progressSub").textContent =
+    `${done} of ${total} exercise${total === 1 ? "" : "s"} complete`;
+
+  const title = document.getElementById("progressTitle");
+  if(total === 0)     title.textContent = "No exercises yet";
+  else if(done === 0) title.textContent = "Let's get moving";
+  else if(pct < 50)   title.textContent = "Good start";
+  else if(pct < 100)  title.textContent = "Almost there";
+  else                title.textContent = "Workout complete!";
+
+  document.getElementById("streakCount").textContent = currentStreak();
+
+  if(total > 0 && done === total && !celebratedToday){
+    celebratedToday = true;
+    const gains = before ? diffGains(before) : { records:[], badges:[], leveled:false };
+    setTimeout(() => celebrate(gains), 320);
+  }
+  if(done < total) celebratedToday = false;
+}
+let celebratedToday = dayComplete(todayKey());
+
+document.getElementById("workAnyway").addEventListener("click", () => {
+  S.today.override = true;
+  save(); recordToday(); renderToday();
+  toast("Rest day overridden. Go get it.");
+});
+
+/* --- shuffle: today only, saved routine untouched --- */
+document.getElementById("shuffleBtn").addEventListener("click", () => {
+  S.todayPlan = generateWorkout();
+  S.today.done = [];
+  celebratedToday = false;
+  save(); recordToday(); renderToday();
+  toast("New workout for today 🎲");
+});
+document.getElementById("undoShuffle").addEventListener("click", () => {
+  S.todayPlan = null;
+  S.today.done = [];
+  celebratedToday = false;
+  save(); recordToday(); renderToday();
+  toast("Back to your saved routine.");
+});
+document.getElementById("reset").addEventListener("click", () => {
+  S.today.done = []; celebratedToday = false;
+  recordToday(); renderList();
+  toast("Reset — fresh start.");
+});
+
+
+/* ============================================================
+   JS F — THE SINGLE-EXERCISE TIMER (the ⏱ chip)
+   ============================================================ */
+let timerEx=null, timerLeft=0, timerTotal=0, timerId=null, timerRunning=false;
+const tOverlay = document.getElementById("timerOverlay");
+const tFill = document.getElementById("timerFill");
+const tCount = document.getElementById("timerCount");
+const tToggle = document.getElementById("timerToggle");
+
+function openTimer(ex){
+  const lvl = levelNow();
+  timerEx = ex; timerTotal = timerLeft = exSecs(ex, lvl);
+  document.getElementById("timerName").textContent = ex.name;
+  document.getElementById("timerDetail").textContent = exDetail(ex, lvl);
+  paintTimer(); tToggle.textContent = "Start"; timerRunning = false;
+  tOverlay.classList.add("show");
+}
+function paintTimer(){
+  tCount.textContent = fmtTime(Math.max(0,timerLeft));
+  const circ = 2*Math.PI*92;
+  tFill.style.strokeDasharray = circ;
+  tFill.style.strokeDashoffset = circ*(1 - Math.max(0,timerLeft)/timerTotal);
+}
+tToggle.addEventListener("click", () => {
+  if(timerRunning){ clearInterval(timerId); timerRunning=false; tToggle.textContent="Resume"; }
+  else{
+    if(timerLeft <= 0){ timerLeft = timerTotal; paintTimer(); }
+    timerId = setInterval(() => { timerLeft--; paintTimer(); if(timerLeft<=0) finishTimer(); }, 1000);
+    timerRunning = true; tToggle.textContent = "Pause";
+  }
+});
+function closeTimer(){ clearInterval(timerId); timerRunning=false; tOverlay.classList.remove("show"); }
+document.getElementById("timerClose").addEventListener("click", closeTimer);
+
+function finishTimer(){
+  clearInterval(timerId); timerRunning = false;
+  beep();
+  if(navigator.vibrate) navigator.vibrate([120,60,120]);
+  if(timerEx && !S.today.done.includes(timerEx.id)){
+    const before = snapshot();
+    S.today.done.push(timerEx.id);
+    recordToday();
+    // updateProgress BEFORE renderList — renderList calls it too, and if it
+    // got there first the celebration would fire without knowing a level
+    // was gained, so the "Level up" chip would never show.
+    updateProgress(before);
+    renderList();
+    burst(window.innerWidth/2, window.innerHeight/2, 40);
+  }
+  tToggle.textContent = "Again";
+  setTimeout(closeTimer, 900);
+}
+
+function beep(hi){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return;
+    const ctx = new Ctx();
+    const notes = hi ? [880,1170] : [660,880];
+    [0,.18].forEach((delay,i) => {
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type = "sine"; osc.frequency.value = notes[i];
+      gain.gain.setValueAtTime(.0001, ctx.currentTime+delay);
+      gain.gain.exponentialRampToValueAtTime(.3, ctx.currentTime+delay+.02);
+      gain.gain.exponentialRampToValueAtTime(.0001, ctx.currentTime+delay+.28);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(ctx.currentTime+delay); osc.stop(ctx.currentTime+delay+.3);
+    });
+    setTimeout(() => ctx.close(), 900);
+  }catch(e){}
+}
+
+
+/* ============================================================
+   JS G — THE GUIDED PLAYER
+   Walks set by set through the whole workout: work, rest, work,
+   rest, next exercise. Timed moves count themselves down; rep
+   moves wait for a tap.
+   ============================================================ */
+const P = {
+  on:false, exIdx:0, setIdx:0, phase:"work", left:0, total:0,
+  tick:null, running:false, before:null, wake:null
+};
+const pl = {
+  root:  document.getElementById("player"),
+  step:  document.getElementById("playerStep"),
+  bar:   document.getElementById("playerBar"),
+  label: document.getElementById("playerLabel"),
+  name:  document.getElementById("playerName"),
+  target:document.getElementById("playerTarget"),
+  sets:  document.getElementById("playerSets"),
+  ring:  document.getElementById("playerRingWrap"),
+  fill:  document.getElementById("playerFill"),
+  count: document.getElementById("playerCount"),
+  reps:  document.getElementById("playerReps"),
+  next:  document.getElementById("playerNext"),
+  main:  document.getElementById("playerMain"),
+  skip:  document.getElementById("playerSkip")
+};
+
+function setsOf(ex){ return Math.max(1, ex.sets || 1); }
+function totalSets(){ return activeRoutine().reduce((n,e) => n + setsOf(e), 0); }
+function setsBefore(idx){
+  return activeRoutine().slice(0, idx).reduce((n,e) => n + setsOf(e), 0);
+}
+
+async function startGuided(){
+  const routine = activeRoutine();
+  if(!routine.length){ toast("Add some exercises first."); return; }
+
+  P.on = true; P.before = snapshot();
+  // Begin at the first exercise that isn't already ticked off
+  P.exIdx = routine.findIndex(e => !S.today.done.includes(e.id));
+  if(P.exIdx < 0) P.exIdx = 0;
+  P.setIdx = 0; P.phase = "work";
+
+  pl.root.classList.add("show");
+  document.body.style.overflow = "hidden";
+
+  // Keep the screen on while working out, where the browser allows it
+  try{
+    if("wakeLock" in navigator) P.wake = await navigator.wakeLock.request("screen");
+  }catch(e){}
+
+  beginWork();
+}
+
+function beginWork(){
+  P.phase = "work";
+  pl.root.classList.remove("resting");
+  const ex = activeRoutine()[P.exIdx];
+  const lvl = levelNow();
+  const secs = exSecs(ex, lvl), reps = exReps(ex, lvl);
+
+  pl.label.textContent = "Now";
+  pl.name.textContent  = ex.name;
+  pl.target.textContent = secs ? fmtTime(secs) : (reps ? reps + " reps" : "Go");
+  pl.sets.textContent  = setsOf(ex) > 1 ? `Set ${P.setIdx+1} of ${setsOf(ex)}` : (ex.note || "");
+  pl.next.classList.add("hidden");
+  paintBar();
+
+  if(secs){
+    P.total = P.left = secs;
+    pl.ring.classList.remove("hidden");
+    pl.reps.classList.add("hidden");
+    paintPlayer();
+    pl.main.textContent = "Pause";
+    pl.skip.textContent = "Skip";
+    runTick();
+  } else {
+    pl.ring.classList.add("hidden");
+    pl.reps.classList.remove("hidden");
+    pl.reps.textContent = reps || "—";
+    pl.main.textContent = "Done";
+    pl.skip.textContent = "Skip";
+    stopTick();
+  }
+}
+
+function beginRest(seconds, nextText){
+  P.phase = "rest";
+  pl.root.classList.add("resting");
+  P.total = P.left = seconds;
+  pl.label.textContent = "Rest";
+  pl.name.textContent = "Breathe";
+  pl.target.textContent = "";
+  pl.sets.textContent = "";
+  pl.ring.classList.remove("hidden");
+  pl.reps.classList.add("hidden");
+  pl.next.classList.remove("hidden");
+  pl.next.innerHTML = "Up next: <b>" + nextText + "</b>";
+  pl.main.textContent = "Skip rest";
+  pl.skip.textContent = "Exit";
+  paintPlayer(); paintBar();
+  runTick();
+}
+
+function paintPlayer(){
+  pl.count.textContent = fmtTime(Math.max(0, P.left));
+  const circ = 2*Math.PI*92;
+  pl.fill.style.strokeDasharray = circ;
+  pl.fill.style.strokeDashoffset = circ*(1 - Math.max(0,P.left)/P.total);
+}
+function paintBar(){
+  const done = setsBefore(P.exIdx) + P.setIdx;
+  pl.bar.style.width = Math.round(done/Math.max(1,totalSets())*100) + "%";
+  pl.step.textContent = `Exercise ${P.exIdx+1} of ${activeRoutine().length}`;
+}
+function runTick(){
+  stopTick();
+  P.running = true;
+  P.tick = setInterval(() => {
+    P.left--;
+    paintPlayer();
+    if(P.left <= 0){ stopTick(); P.phase === "work" ? completeSet() : afterRest(); }
+  }, 1000);
+}
+function stopTick(){ clearInterval(P.tick); P.tick = null; P.running = false; }
+
+// A set just finished — rest, move to the next set, or move on
+function completeSet(){
+  beep();
+  if(navigator.vibrate) navigator.vibrate([90,50,90]);
+  const routine = activeRoutine();
+  const ex = routine[P.exIdx];
+
+  if(P.setIdx < setsOf(ex) - 1){
+    P.setIdx++;
+    beginRest(SET_REST, ex.name + " · set " + (P.setIdx+1));
+    return;
+  }
+  // Exercise done — tick it off (quietly; the celebration waits for the end)
+  if(!S.today.done.includes(ex.id)){ S.today.done.push(ex.id); recordToday(); }
+  burst(window.innerWidth/2, window.innerHeight*0.42, 30);
+
+  if(P.exIdx < routine.length - 1){
+    P.exIdx++; P.setIdx = 0;
+    beginRest(EX_REST, routine[P.exIdx].name);
+  } else {
+    finishGuided();
+  }
+}
+function afterRest(){ beep(true); beginWork(); }
+
+pl.main.addEventListener("click", () => {
+  if(P.phase === "rest"){ stopTick(); afterRest(); return; }
+  const ex = activeRoutine()[P.exIdx];
+  const timed = !!exSecs(ex, levelNow());
+  if(timed){
+    if(P.running){ stopTick(); pl.main.textContent = "Resume"; }
+    else { runTick(); pl.main.textContent = "Pause"; }
+  } else {
+    completeSet();                       // rep-based: the tap IS the finish
+  }
+});
+pl.skip.addEventListener("click", () => {
+  if(P.phase === "rest"){ exitGuided(); return; }
+  stopTick(); completeSet();             // skip the rest of this set
+});
+document.getElementById("playerExit").addEventListener("click", exitGuided);
+
+function releaseWake(){
+  try{ if(P.wake){ P.wake.release(); P.wake = null; } }catch(e){}
+}
+function closePlayer(){
+  stopTick(); releaseWake();
+  P.on = false;
+  pl.root.classList.remove("show","resting");
+  document.body.style.overflow = "";
+}
+/* updateProgress BEFORE renderList in both of these. renderList calls
+   updateProgress itself with no arguments, so if it goes first it fires
+   the celebration knowing nothing about what was earned — and the badge
+   and level chips silently never appear. */
+function exitGuided(){
+  closePlayer();
+  updateProgress(P.before);
+  renderList();
+  toast("Workout paused — your ticks are saved.");
+}
+function finishGuided(){
+  closePlayer();
+  updateProgress(P.before);              // this is what fires the celebration
+  renderList();
+}
+document.getElementById("startGuided").addEventListener("click", startGuided);
+
+
+/* ============================================================
+   JS H — PROGRESS TAB & CHARTS
+   ============================================================ */
+const tip = document.getElementById("chartTip");
+function showTip(x,y,html){
+  tip.innerHTML = html; tip.classList.add("show");
+  const half = tip.offsetWidth/2;
+  tip.style.left = Math.max(half+8, Math.min(x, window.innerWidth-half-8)) + "px";
+  tip.style.top = y + "px";
+}
+function hideTip(){ tip.classList.remove("show"); }
+let tapTipTimer;
+function bindTip(el, buildHtml, offsetY){
+  const place = () => {
+    const r = el.getBoundingClientRect();
+    showTip(r.left + r.width/2, r.top + (offsetY||0), buildHtml());
+  };
+  el.addEventListener("mouseenter", place);
+  el.addEventListener("mouseleave", hideTip);
+  el.addEventListener("click", () => { place(); clearTimeout(tapTipTimer); tapTipTimer = setTimeout(hideTip, 2200); });
+  el.style.cursor = "pointer";
+}
+
+function renderProgress(){
+  const streak = currentStreak();
+  document.getElementById("heroStreak").textContent = streak;
+  document.getElementById("heroLabel").textContent =
+      streak === 0 ? "day streak — finish today to start one"
+    : streak === 1 ? "day streak — come back tomorrow to make it two"
+    : "days in a row";
+
+  const lvl = levelNow(), done = totalDone();
+  const into = done - lvl*PER_LEVEL, maxed = lvl >= MAX_LEVEL;
+  document.getElementById("levelName").textContent  = "Level " + (lvl+1);
+  document.getElementById("levelCount").textContent = maxed ? "Maxed out" : into + " / " + PER_LEVEL + " workouts";
+  document.getElementById("levelText").textContent  = maxed
+    ? "You've reached the top level. Your targets stay here — time to edit the routine and set harder ones yourself."
+    : `Every ${PER_LEVEL} finished workouts your targets go up. ${PER_LEVEL-into} more to level ${lvl+2}.`;
+  document.getElementById("levelMeter").style.width = (maxed ? 100 : into/PER_LEVEL*100) + "%";
+
+  document.getElementById("statTotal").textContent = done;
+  const month = todayKey().slice(0,7);
+  document.getElementById("statMonth").textContent =
+    Object.keys(S.history).filter(k => dayComplete(k) && k.slice(0,7) === month).length;
+
+  renderRecords(); renderHeatmap(); renderBars();
+}
+
+function renderRecords(){
+  const s = snapshot();
+  document.getElementById("recStreak").textContent = s.streak;
+  document.getElementById("recWeek").textContent   = s.week;
+  document.getElementById("recMonth").textContent  = s.month;
+  const wrap = document.getElementById("badges");
+  wrap.innerHTML = "";
+  BADGES.forEach(b => {
+    const on = b.test(s);
+    const el = document.createElement("div");
+    el.className = "badge" + (on ? " on" : "");
+    el.innerHTML = '<span class="ico"></span><b></b><span class="desc"></span>';
+    el.querySelector(".ico").textContent = b.icon;
+    el.querySelector("b").textContent = b.name;
+    el.querySelector(".desc").textContent = b.desc;
+    el.title = on ? b.name + " — unlocked" : "Locked: " + b.desc;
+    wrap.appendChild(el);
+  });
+}
+
+function heatLevel(key){
+  const h = S.history[key];
+  if(!h || h.t === 0 || h.c === 0) return 0;
+  const r = h.c/h.t;
+  return r >= 1 ? 4 : r >= .66 ? 3 : r >= .33 ? 2 : 1;
+}
+function renderHeatmap(){
+  const wrap = document.getElementById("heat");
+  wrap.innerHTML = "";
+  const start = new Date(); start.setHours(0,0,0,0);
+  start.setDate(start.getDate()-83);
+  const shift = (start.getDay()+6)%7;
+  start.setDate(start.getDate()-shift);
+  const tk = todayKey();
+  const now = new Date(); now.setHours(23,59,59,999);
+
+  for(let i=0;i<84+shift;i++){
+    const d = new Date(start); d.setDate(start.getDate()+i);
+    const key = dateKey(d);
+    const cell = document.createElement("div");
+    cell.className = "heat-cell";
+    if(d > now){ cell.style.background = "transparent"; wrap.appendChild(cell); continue; }
+    const h = S.history[key];
+    if(!h && isRestDay(d)) cell.classList.add("rest");
+    else cell.style.background = `var(--heat-${heatLevel(key)})`;
+    if(key === tk) cell.classList.add("today");
+    const label = d.toLocaleDateString(undefined,{month:"short",day:"numeric"});
+    bindTip(cell, () => {
+      const hh = S.history[key];
+      if(hh && hh.t) return `${label} — <b>${hh.c}/${hh.t}</b> exercises`;
+      return `${label} — ` + (isRestDay(d) ? "Rest day" : "Nothing logged");
+    }, 0);
+    wrap.appendChild(cell);
+  }
+}
+
+function renderBars(){
+  const weeks = [];
+  const monday = new Date(); monday.setHours(0,0,0,0);
+  monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
+  for(let w=7;w>=0;w--){
+    const s = new Date(monday); s.setDate(monday.getDate()-w*7);
+    let count = 0;
+    for(let i=0;i<7;i++){
+      const d = new Date(s); d.setDate(s.getDate()+i);
+      if(dayComplete(dateKey(d))) count++;
+    }
+    weeks.push({ label:s.toLocaleDateString(undefined,{month:"short",day:"numeric"}),
+                 short:(s.getMonth()+1)+"/"+s.getDate(), count });
+  }
+  // viewBox in real pixels so 10px text renders at 10px
+  const W=340,H=176,padL=24,padR=6,padT=18,padB=26;
+  const plotW=W-padL-padR, plotH=H-padT-padB, max=7;
+  const band=plotW/weeks.length, barW=Math.min(band*.5,24), baseY=padT+plotH;
+
+  let svg = `<svg class="bars" viewBox="0 0 ${W} ${H}" role="img"
+    aria-label="Bar chart of workouts finished each week for the last eight weeks">`;
+  [0,2,4,6].forEach(v => {
+    const y = padT + plotH*(1-v/max);
+    svg += `<line class="grid-line" x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}"/>`;
+    svg += `<text class="tick-text" x="${padL-7}" y="${y+3.5}" text-anchor="end">${v}</text>`;
+  });
+  weeks.forEach((wk,i) => {
+    const cx = padL + band*i + band/2;
+    const h = plotH*(wk.count/max), y = baseY-h, r = Math.min(4,h/2);
+    svg += `<g>`;
+    if(wk.count > 0){
+      svg += `<path class="bar" d="M${cx-barW/2} ${baseY}
+        L${cx-barW/2} ${y+r} Q${cx-barW/2} ${y} ${cx-barW/2+r} ${y}
+        L${cx+barW/2-r} ${y} Q${cx+barW/2} ${y} ${cx+barW/2} ${y+r}
+        L${cx+barW/2} ${baseY} Z"/>`;
+    }
+    if(i === weeks.length-1 && wk.count > 0)
+      svg += `<text class="val-text" x="${cx}" y="${y-6}" text-anchor="middle">${wk.count}</text>`;
+    svg += `<text class="tick-text" x="${cx}" y="${H-8}" text-anchor="middle">${wk.short}</text>`;
+    svg += `<rect class="bar-hit" x="${cx-band/2}" y="${padT}" width="${band}" height="${plotH}" data-i="${i}"/>`;
+    svg += `</g>`;
+  });
+  svg += `</svg>`;
+
+  const wrap = document.getElementById("barsWrap");
+  wrap.innerHTML = svg;
+  wrap.querySelectorAll(".bar-hit").forEach(hit => {
+    const wk = weeks[+hit.dataset.i];
+    bindTip(hit, () => `Week of ${wk.label} — <b>${wk.count}</b> of 7 days`, 14);
+  });
+}
+
+
+/* ============================================================
+   JS I — ROUTINE EDITOR (with drag-to-reorder)
+   ============================================================ */
+const editList = document.getElementById("editList");
+const daysEl = document.getElementById("days");
+let editingId = null;
+
+const ICON = {
+  grip: '<svg viewBox="0 0 24 24"><circle cx="9" cy="6" r="1.7"/><circle cx="15" cy="6" r="1.7"/><circle cx="9" cy="12" r="1.7"/><circle cx="15" cy="12" r="1.7"/><circle cx="9" cy="18" r="1.7"/><circle cx="15" cy="18" r="1.7"/></svg>',
+  pencil: '<svg viewBox="0 0 24 24"><path d="M4 20h4L19.5 8.5a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="M14.5 6.5l3 3"/></svg>',
+  trash: '<svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 4h4a1 1 0 0 1 1 1v2H9V5a1 1 0 0 1 1-1z"/><path d="M6 7l1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7"/><path d="M10.5 11v6M13.5 11v6"/></svg>'
+};
+
+function renderDays(){
+  daysEl.innerHTML = "";
+  for(let i=0;i<7;i++){
+    const b = document.createElement("button");
+    b.className = "day-btn" + (S.restDays.includes(i) ? " rest" : "");
+    b.textContent = DAY_NAMES[i];
+    b.title = DAY_FULL[i] + (S.restDays.includes(i) ? " — rest day" : " — training day");
+    b.setAttribute("aria-label", b.title);
+    b.addEventListener("click", () => {
+      if(S.restDays.includes(i)) S.restDays = S.restDays.filter(x => x !== i);
+      else S.restDays.push(i);
+      if(i === new Date().getDay()) S.today.override = false;
+      save(); recordToday(); renderDays(); renderToday();
+      toast(DAY_FULL[i] + (S.restDays.includes(i) ? " is now a rest day." : " is now a training day."));
+    });
+    daysEl.appendChild(b);
+  }
+}
+
+function renderEditor(){
+  const lvl = levelNow();
+  editList.innerHTML = "";
+  if(S.routine.length === 0){
+    editList.innerHTML = '<p class="empty-note">Your routine is empty.<br>Add your first exercise below.</p>';
+    return;
+  }
+  S.routine.forEach((ex, i) => {
+    const row = document.createElement("div");
+    row.className = "edit-row";
+    row.dataset.id = ex.id;
+    row.innerHTML = `
+      <button class="drag-handle" aria-label="Reorder ${ex.name}. Use arrow up and arrow down keys to move it." title="Drag to reorder">${ICON.grip}</button>
+      <span class="info"><span class="name"></span><span class="detail"></span></span>
+      <span class="row-actions">
+        <button class="icon-btn edit" aria-label="Edit ${ex.name}" title="Edit">${ICON.pencil}</button>
+        <button class="icon-btn del"  aria-label="Delete ${ex.name}" title="Delete">${ICON.trash}</button>
+      </span>`;
+    row.querySelector(".name").textContent = ex.name;
+    row.querySelector(".detail").textContent =
+      exDetail(ex, lvl) + ((ex.step||0) > 0 ? "   +" + ex.step + "/level" : "");
+    row.querySelector(".edit").addEventListener("click", () => startEdit(ex));
+    row.querySelector(".del").addEventListener("click",  () => deleteEx(ex.id));
+
+    const handle = row.querySelector(".drag-handle");
+    handle.addEventListener("pointerdown", e => startDrag(e, row, i));
+    // Keyboard equivalent — drag alone would lock out anyone not using a mouse
+    handle.addEventListener("keydown", e => {
+      if(e.key === "ArrowUp")   { e.preventDefault(); moveEx(i,-1); focusHandle(i-1); }
+      if(e.key === "ArrowDown") { e.preventDefault(); moveEx(i, 1); focusHandle(i+1); }
+    });
+    editList.appendChild(row);
+  });
+}
+function focusHandle(i){
+  const rows = editList.querySelectorAll(".edit-row");
+  if(rows[i]) rows[i].querySelector(".drag-handle").focus();
+}
+
+/* --- drag to reorder -------------------------------------------
+   Pointer events, not the old HTML5 drag-and-drop API, because that
+   one does nothing at all on a touchscreen — and this is a phone app.
+----------------------------------------------------------------*/
+let dragState = null;
+
+function startDrag(e, row, index){
+  if(e.button !== undefined && e.button > 0) return;   // left button / touch only
+  e.preventDefault();
+  dragState = { row, index, pointerId:e.pointerId, startY:e.clientY };
+  row.classList.add("dragging");
+  editList.classList.add("drag-active");
+  try{ row.setPointerCapture(e.pointerId); }catch(err){}
+  if(navigator.vibrate) navigator.vibrate(12);
+
+  row.addEventListener("pointermove", moveDrag);
+  row.addEventListener("pointerup", endDrag);
+  row.addEventListener("pointercancel", endDrag);
+}
+
+function moveDrag(e){
+  if(!dragState || e.pointerId !== dragState.pointerId) return;
+  e.preventDefault();
+  const dy = e.clientY - dragState.startY;
+  dragState.row.style.transform = `translateY(${dy}px)`;
+
+  const rows = [...editList.querySelectorAll(".edit-row")];
+  const dr = dragState.row.getBoundingClientRect();
+
+  /* Swap when the LEADING edge of the dragged row crosses a neighbour's
+     midpoint — its bottom edge going down, its top edge going up.
+     Using the dragged row's centre instead means dropping it exactly on
+     a row's centre sits right on the boundary and lands a slot short. */
+  let target = dragState.index;
+  rows.forEach((r, i) => {
+    if(r === dragState.row) return;
+    const rr = r.getBoundingClientRect();
+    const mid = rr.top + rr.height/2;
+    if(i > dragState.index && dr.bottom > mid) target = Math.max(target, i);
+    if(i < dragState.index && dr.top    < mid) target = Math.min(target, i);
+  });
+
+  if(target !== dragState.index){
+    const natBefore = dragState.row.offsetTop;      // position ignoring the transform
+
+    const [item] = S.routine.splice(dragState.index, 1);
+    S.routine.splice(target, 0, item);
+
+    // Re-append the existing nodes in the new order — no re-render, which
+    // would destroy the element the pointer has captured.
+    const byId = {};
+    rows.forEach(r => byId[r.dataset.id] = r);
+    S.routine.forEach(ex => editList.appendChild(byId[ex.id]));
+
+    /* The row now sits somewhere new in the layout. Shift the baseline by
+       exactly how far it moved, so the visible position is unchanged and
+       the row keeps tracking the pointer 1:1. Resetting startY to the
+       current pointer instead makes it lag a slot behind on every swap. */
+    dragState.startY += dragState.row.offsetTop - natBefore;
+    dragState.index = target;
+    dragState.row.style.transform = `translateY(${e.clientY - dragState.startY}px)`;
+  }
+}
+
+function endDrag(e){
+  if(!dragState) return;
+  const row = dragState.row;
+  row.removeEventListener("pointermove", moveDrag);
+  row.removeEventListener("pointerup", endDrag);
+  row.removeEventListener("pointercancel", endDrag);
+  try{ row.releasePointerCapture(dragState.pointerId); }catch(err){}
+  row.classList.remove("dragging");
+  row.style.transform = "";
+  editList.classList.remove("drag-active");
+  dragState = null;
+  save(); recordToday(); renderEditor(); renderToday();
+}
+
+function moveEx(i, dir){
+  const j = i + dir;
+  if(j < 0 || j >= S.routine.length) return;
+  [S.routine[i], S.routine[j]] = [S.routine[j], S.routine[i]];
+  save(); recordToday(); renderEditor(); renderToday();
+}
+function deleteEx(id){
+  S.routine = S.routine.filter(e => e.id !== id);
+  S.today.done = S.today.done.filter(x => x !== id);
+  if(editingId === id) resetForm();
+  recordToday(); renderEditor(); renderToday();
+  toast("Exercise removed.");
+}
+
+const fName=document.getElementById("fName"), fSets=document.getElementById("fSets");
+const fReps=document.getElementById("fReps"), fSeconds=document.getElementById("fSeconds");
+const fStep=document.getElementById("fStep"), fNote=document.getElementById("fNote");
+
+function startEdit(ex){
+  editingId = ex.id;
+  fName.value = ex.name; fSets.value = ex.sets || ""; fReps.value = ex.reps || "";
+  fSeconds.value = ex.seconds || ""; fStep.value = ex.step || ""; fNote.value = ex.note || "";
+  document.getElementById("formTitle").textContent = "Edit exercise";
+  document.getElementById("saveExercise").textContent = "Save changes";
+  document.getElementById("cancelEdit").classList.remove("hidden");
+  fName.focus();
+  fName.scrollIntoView({ behavior:"smooth", block:"center" });
+}
+function resetForm(){
+  editingId = null;
+  [fName,fSets,fReps,fSeconds,fStep,fNote].forEach(f => f.value = "");
+  document.getElementById("formTitle").textContent = "Add an exercise";
+  document.getElementById("saveExercise").textContent = "Add exercise";
+  document.getElementById("cancelEdit").classList.add("hidden");
+}
+document.getElementById("cancelEdit").addEventListener("click", resetForm);
+
+function numOrNull(input, min, max){
+  const n = parseInt(input.value, 10);
+  if(isNaN(n) || n < min) return null;
+  return Math.min(n, max);
+}
+document.getElementById("saveExercise").addEventListener("click", () => {
+  const name = fName.value.trim();
+  if(!name){ toast("Give the exercise a name first."); fName.focus(); return; }
+  const seconds = numOrNull(fSeconds,1,3600);
+  const reps    = seconds ? null : numOrNull(fReps,1,500);
+  const sets    = numOrNull(fSets,1,20) || 1;
+  const step    = numOrNull(fStep,0,50) || 0;
+  const note    = fNote.value.trim();
+  if(!seconds && !reps && !note){
+    toast("Add reps, seconds, or a note so there's something to aim for.");
+    fReps.focus(); return;
+  }
+  if(editingId){
+    const ex = S.routine.find(e => e.id === editingId);
+    if(ex) Object.assign(ex, { name, sets, reps, seconds, step, note });
+    toast("Saved.");
+  } else {
+    S.routine.push({ id:"e"+Date.now()+Math.floor(Math.random()*999), name, sets, reps, seconds, step, note });
+    toast("Added to your routine.");
+  }
+  resetForm(); recordToday(); renderEditor(); renderToday();
+});
+document.getElementById("restoreDefault").addEventListener("click", () => {
+  S.routine = JSON.parse(JSON.stringify(DEFAULT_ROUTINE));
+  S.todayPlan = null; S.today.done = [];
+  resetForm(); recordToday(); renderEditor(); renderToday();
+  toast("Starter routine restored.");
+});
+
+
+/* ============================================================
+   JS J — CONFETTI, TOAST, CELEBRATION
+   ============================================================ */
+function celebrate(gains){
+  gains = gains || { records:[], badges:[], leveled:false };
+  const isRecord = gains.records.length > 0 || gains.badges.length > 0;
+  const streak = currentStreak();
+  const title = document.getElementById("celebrateTitle");
+  title.textContent = isRecord ? "NEW RECORD!" : WINS[Math.floor(Math.random()*WINS.length)];
+  title.classList.toggle("record-title", isRecord);
+  document.getElementById("celebrateEmoji").textContent = isRecord ? "🏆" : "🎉";
+
+  const g = document.getElementById("gains");
+  g.innerHTML = "";
+  const chips = [];
+  gains.badges.forEach(b => chips.push({ cls:"gain", text:b.icon+" "+b.name }));
+  gains.records.forEach(r => chips.push({ cls:"gain", text:r }));
+  if(gains.leveled) chips.push({ cls:"gain lvl", text:"⚡ Level "+(levelNow()+1) });
+  chips.forEach((c,i) => {
+    const el = document.createElement("span");
+    el.className = c.cls; el.textContent = c.text;
+    el.style.setProperty("--gd", (0.25 + i*0.13)+"s");
+    g.appendChild(el);
+  });
+
+  document.getElementById("celebrateMsg").textContent =
+      gains.badges.length  ? "That one's going in the trophy case."
+    : gains.records.length ? "You've never done better than this. Keep it there."
+    : gains.leveled        ? `You're on level ${levelNow()+1} now — your targets just went up a notch.`
+    : streak > 1           ? `That's ${streak} days in a row. You're building something real.`
+                           : "You finished every exercise today. That's a win.";
+  document.getElementById("celebration").classList.add("show");
+  bigConfetti(isRecord);
+}
+document.getElementById("closeCelebrate").addEventListener("click", () => {
+  document.getElementById("celebration").classList.remove("show");
+  renderList();
+});
+document.addEventListener("keydown", e => {
+  if(e.key === "Escape"){
+    document.getElementById("celebration").classList.remove("show");
+    closeTimer();
+    if(P.on) exitGuided();
+  }
+});
+
+const canvas = document.getElementById("confetti");
+const ctx = canvas.getContext("2d");
+let particles = [], animating = false;
+function sizeCanvas(){
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = window.innerWidth*dpr; canvas.height = window.innerHeight*dpr;
+  canvas.style.width = window.innerWidth+"px"; canvas.style.height = window.innerHeight+"px";
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+sizeCanvas();
+window.addEventListener("resize", sizeCanvas);
+
+const COLORS = ["#a78bfa","#f472b6","#38bdf8","#4ade80","#fbbf24","#fb7185","#ffffff"];
+const GOLD   = ["#fbbf24","#fcd34d","#fde68a","#f59e0b","#fb923c","#ffffff"];
+let palette = COLORS;
+function pick(){ return palette[Math.floor(Math.random()*palette.length)]; }
+function burst(x,y,count){
+  for(let i=0;i<count;i++){
+    const a = Math.random()*Math.PI*2, sp = 3+Math.random()*7;
+    particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,size:4+Math.random()*6,
+      color:pick(),rotation:Math.random()*360,spin:(Math.random()-.5)*22,life:1});
+  }
+  start();
+}
+function bigConfetti(gold){
+  palette = gold ? GOLD : COLORS;
+  const waves = gold ? 4 : 3;
+  for(let w=0;w<waves;w++){
+    setTimeout(() => {
+      for(let i=0;i<90;i++){
+        particles.push({x:Math.random()*window.innerWidth,y:-20-Math.random()*120,
+          vx:(Math.random()-.5)*5,vy:2+Math.random()*5,size:5+Math.random()*8,
+          color:pick(),rotation:Math.random()*360,spin:(Math.random()-.5)*18,life:1});
+      }
+      start();
+    }, w*260);
+  }
+  burst(40, window.innerHeight*.7, 45);
+  burst(window.innerWidth-40, window.innerHeight*.7, 45);
+  setTimeout(() => { palette = COLORS; }, waves*260 + 100);
+}
+function start(){ if(!animating){ animating = true; requestAnimationFrame(tick); } }
+function tick(){
+  ctx.clearRect(0,0,window.innerWidth,window.innerHeight);
+  particles.forEach(p => {
+    p.vy += .28; p.vx *= .995; p.x += p.vx; p.y += p.vy;
+    p.rotation += p.spin; p.life -= .006;
+    ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rotation*Math.PI/180);
+    ctx.globalAlpha = Math.max(0,p.life); ctx.fillStyle = p.color;
+    ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size*.6); ctx.restore();
+  });
+  particles = particles.filter(p => p.life > 0 && p.y < window.innerHeight+60);
+  if(particles.length) requestAnimationFrame(tick);
+  else { animating = false; ctx.clearRect(0,0,window.innerWidth,window.innerHeight); }
+}
+
+let toastTimer;
+function toast(text){
+  const el = document.getElementById("toast");
+  el.textContent = text; el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 1700);
+}
+
+
+/* ============================================================
+   JS K — TABS & START-UP
+   ============================================================ */
+document.querySelectorAll(".tabbar button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tabbar button").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("view-"+btn.dataset.view).classList.add("active");
+    hideTip();
+    if(btn.dataset.view === "progress") renderProgress();
+    if(btn.dataset.view === "routine"){ renderDays(); renderEditor(); }
+    window.scrollTo(0,0);
+  });
+});
+
+document.getElementById("today").textContent =
+  new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});
+
+showQuote(false);
+renderToday();
+recordToday();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("sw.js")
+      .then(()   => console.log("Offline support is on."))
+      .catch(err => console.log("Offline support not available here:", err.message));
+  });
+}
+</script>
+</body>
+</html>
