@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rise wireframe</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a12; --ink:#f4f3ff; --soft:rgba(244,243,255,.6); --faint:rgba(244,243,255,.34);
+    --line:rgba(255,255,255,.16); --accent:#a78bfa; --pink:#f472b6; --blue:#38bdf8; --green:#4ade80;
+    --box:rgba(255,255,255,.045);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:Outfit,system-ui,sans-serif;
+       padding:44px 40px 40px;width:1560px}
+  h1{font-size:34px;font-weight:800;letter-spacing:-.03em;
+     background:linear-gradient(110deg,#fff 10%,var(--accent) 55%,var(--pink) 95%);
+     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .sub{color:var(--soft);font-size:14px;font-weight:300;margin:6px 0 28px}
+  h2{font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;
+     color:var(--faint);margin:0 0 14px}
+  .cols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px;margin-bottom:34px}
+
+  /* --- phone wireframes --- */
+  .phone{border:1.5px solid var(--line);border-radius:22px;padding:14px;background:var(--box);
+         display:flex;flex-direction:column;gap:8px;min-height:640px}
+  .blk{border:1px dashed rgba(255,255,255,.28);border-radius:10px;padding:9px 11px;position:relative}
+  .blk .tag{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);
+            font-weight:600;display:block;margin-bottom:3px}
+  .blk .body{font-size:11.5px;color:var(--soft);font-weight:300;line-height:1.45}
+  .blk.api{border-color:rgba(56,189,248,.55);background:rgba(56,189,248,.07)}
+  .blk.api .tag{color:var(--blue)}
+  .blk.grow{flex:1}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .bar{height:7px;border-radius:4px;background:rgba(255,255,255,.12);margin-top:5px}
+  .bar i{display:block;height:100%;width:42%;border-radius:4px;
+         background:linear-gradient(90deg,var(--accent),var(--pink))}
+  .grid84{display:grid;grid-template-columns:repeat(14,1fr);gap:2.5px;margin-top:6px}
+  .grid84 span{aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.09)}
+  .grid84 span:nth-child(3n){background:#4c3a8a}
+  .grid84 span:nth-child(5n){background:#8b6ee6}
+  .grid84 span:nth-child(7n){background:var(--accent)}
+  .tabs{display:flex;gap:6px;border-top:1px solid var(--line);padding-top:10px;margin-top:auto}
+  .tabs span{flex:1;text-align:center;font-size:10.5px;color:var(--faint);padding:5px;border-radius:8px}
+  .tabs span.on{background:linear-gradient(100deg,var(--accent),var(--pink));color:#160b2e;font-weight:600}
+  .listrow{display:flex;align-items:center;gap:7px;padding:5px 0;font-size:11px;color:var(--soft)}
+  .listrow em{width:11px;height:11px;border:1.5px solid var(--line);border-radius:4px;flex-shrink:0;font-style:normal}
+  .listrow b{font-weight:400;color:var(--ink)}
+  .listrow s{margin-left:auto;text-decoration:none;font-size:9.5px;color:var(--faint)}
+
+  /* --- component tree --- */
+  .tree{border:1.5px solid var(--line);border-radius:18px;padding:22px 26px;background:var(--box);
+        font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;line-height:1.85;
+        white-space:pre;overflow:visible;color:var(--soft)}
+  .tree b{color:var(--ink);font-weight:600}
+  .tree .store{color:var(--green);font-weight:600}
+  .tree .api{color:var(--blue);font-weight:600}
+  .tree .note{color:var(--faint);font-style:italic}
+  .legend{display:flex;gap:22px;margin:16px 0 0;font-size:11.5px;color:var(--soft);flex-wrap:wrap}
+  .legend i{font-style:normal;display:inline-flex;align-items:center;gap:6px}
+  .swatch{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .two{display:grid;grid-template-columns:1.15fr .85fr;gap:22px;align-items:start}
+  table{border-collapse:collapse;width:100%;font-size:12px}
+  th{text-align:left;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);
+     font-weight:600;padding:0 10px 8px 0;border-bottom:1px solid var(--line)}
+  td{padding:9px 10px 9px 0;border-bottom:1px solid rgba(255,255,255,.07);color:var(--soft);
+     font-weight:300;vertical-align:top}
+  td b{color:var(--ink);font-weight:500}
+  .pill{display:inline-block;font-size:9.5px;padding:2px 7px;border-radius:100px;
+        background:rgba(74,222,128,.14);color:var(--green);border:1px solid rgba(74,222,128,.3)}
+  .pill.key{background:rgba(251,191,36,.14);color:#fbbf24;border-color:rgba(251,191,36,.3)}
+</style></head>
+<body>
+
+<h1>Rise — wireframe &amp; component plan</h1>
+<p class="sub">Drawn before the React implementation. Dashed blocks are components; blue blocks are the ones backed by an API.</p>
+
+<h2>Screen regions</h2>
+<div class="cols">
+
+  <div class="phone">
+    <div class="blk"><span class="tag">TodayHeader · StreakPill</span>
+      <div class="body"><b style="font-size:16px">Rise.</b> &nbsp; 🔥 5 day streak</div></div>
+    <div class="blk api"><span class="tag">QuoteCard ← DummyJSON</span>
+      <div class="body">"It never gets easier. You just get stronger." — ↻ Another one</div></div>
+    <div class="blk api"><span class="tag">WeatherCard ← Open-Meteo</span>
+      <div class="body">☀️ 74°F clear · [ Take it outside ]</div></div>
+    <div class="blk"><span class="tag">ProgressRingCard · Ring</span>
+      <div class="body">◯ 68% — 5 of 8 complete</div></div>
+    <div class="blk"><span class="tag">ActionRow · Button ×2</span>
+      <div class="body">[ ▶ Start workout ]&nbsp;&nbsp;[ 🎲 Surprise me ]</div></div>
+    <div class="blk grow"><span class="tag">ExerciseList · ExerciseRow</span>
+      <div class="listrow"><em>✓</em><b>Jumping Jacks</b><s>⏱ 1:00</s></div>
+      <div class="listrow"><em>✓</em><b>Push-Ups</b><s>3×12 ▲</s></div>
+      <div class="listrow"><em></em><b>Bodyweight Squats</b><s>3×15 ▲</s></div>
+      <div class="listrow"><em></em><b>Plank Hold</b><s>⏱ 0:45</s></div>
+      <div class="listrow"><em></em><b>Forward Lunges</b><s>3×10</s></div>
+    </div>
+    <div class="tabs"><span class="on">✓ Today</span><span>Progress</span><span>Routine</span></div>
+  </div>
+
+  <div class="phone">
+    <div class="blk"><span class="tag">HeroCard</span>
+      <div class="body" style="text-align:center;font-size:22px;color:var(--ink)">5<div style="font-size:11px;color:var(--soft)">days in a row</div></div></div>
+    <div class="blk"><span class="tag">LevelCard · Meter</span>
+      <div class="body">Level 3 · 2 / 3 workouts<div class="bar"><i></i></div></div></div>
+    <div class="row2">
+      <div class="blk"><span class="tag">StatCard</span><div class="body">14 done</div></div>
+      <div class="blk"><span class="tag">StatCard</span><div class="body">6 this month</div></div>
+    </div>
+    <div class="blk api"><span class="tag">CaloriesCard ← API Ninjas</span>
+      <div class="body">🔥 ~508 kcal per workout · 1,240 lifetime</div></div>
+    <div class="row3">
+      <div class="blk"><span class="tag">Record</span><div class="body">🔥 9</div></div>
+      <div class="blk"><span class="tag">Record</span><div class="body">📅 5</div></div>
+      <div class="blk"><span class="tag">Record</span><div class="body">🗓️ 18</div></div>
+    </div>
+    <div class="blk"><span class="tag">Heatmap · HeatCell ×84 → ChartTip</span>
+      <div class="grid84">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+      </div></div>
+    <div class="blk grow"><span class="tag">WeeklyBars (SVG) → ChartTip</span>
+      <div class="body" style="display:flex;align-items:flex-end;gap:6px;height:52px;margin-top:6px">
+        <i style="flex:1;height:30%;background:var(--accent);border-radius:3px 3px 0 0"></i>
+        <i style="flex:1;height:55%;background:var(--accent);border-radius:3px 3px 0 0"></i>
+        <i style="flex:1;height:42%;background:var(--accent);border-radius:3px 3px 0 0"></i>
+        <i style="flex:1;height:78%;background:var(--accent);border-radius:3px 3px 0 0"></i>
+        <i style="flex:1;height:64%;background:var(--accent);border-radius:3px 3px 0 0"></i>
+        <i style="flex:1;height:90%;background:var(--pink);border-radius:3px 3px 0 0"></i>
+      </div></div>
+    <div class="blk"><span class="tag">BadgeGrid · Badge ×10</span>
+      <div class="body">🌱 💪 🎯 🏋️ 💯 🔥 ⚡ ✨ 📈 👑</div></div>
+    <div class="tabs"><span>Today</span><span class="on">Progress</span><span>Routine</span></div>
+  </div>
+
+  <div class="phone">
+    <div class="blk"><span class="tag">RestDayPicker · DayButton ×7</span>
+      <div class="body">(S) &nbsp;M&nbsp; T&nbsp; W&nbsp; T&nbsp; F&nbsp; (S)</div></div>
+    <div class="blk"><span class="tag">EditableList · EditableRow</span>
+      <div class="listrow"><em>⠿</em><b>Push-Ups</b><s>✎ 🗑</s></div>
+      <div class="listrow"><em>⠿</em><b>Squats</b><s>✎ 🗑</s></div>
+      <div class="listrow"><em>⠿</em><b>Plank Hold</b><s>✎ 🗑</s></div>
+      <div class="body" style="font-size:10px;margin-top:4px;color:var(--faint)">drag handle · pointer events + ↑↓ keys</div></div>
+    <div class="blk api grow"><span class="tag">LibraryBrowser ← wger</span>
+      <div class="body">[ search… ] [ Chest ▾ ] [ Bodyweight ▾ ]</div>
+      <div class="listrow" style="margin-top:6px"><b>Incline Push-Up</b><s>+ Add</s></div>
+      <div class="listrow"><b>Bulgarian Split Squat</b><s>+ Add</s></div>
+      <div class="listrow"><b>Pike Push-Up</b><s>+ Add</s></div>
+      <div class="body" style="font-size:10px;color:var(--faint);margin-top:4px">880 exercises · adds prefill the form below</div></div>
+    <div class="blk"><span class="tag">ExerciseForm · Field ×4</span>
+      <div class="body">Name [＿＿＿]<br>Sets [3] Reps [12] Secs [ ]<br>Add per level [1] · Note [ ]<br>[ Add exercise ]</div></div>
+    <div class="tabs"><span>Today</span><span>Progress</span><span class="on">Routine</span></div>
+  </div>
+</div>
+
+<div class="two">
+  <div>
+    <h2>Component tree</h2>
+    <div class="tree">&lt;<b>App</b>&gt;                              <span class="note">activeTab useState</span>
+│
+├─ &lt;<span class="store">WorkoutProvider</span>&gt;               <span class="note">useReducer + localStorage — THE store</span>
+│  ├─ &lt;<span class="store">ToastProvider</span>&gt;              <span class="note">toast()  from anywhere</span>
+│  │  └─ &lt;<span class="store">ConfettiProvider</span>&gt;        <span class="note">burst() / bigConfetti()</span>
+│  │
+│  ├─ &lt;<b>TodayView</b>&gt;
+│  │  ├─ &lt;TodayHeader&gt; → &lt;StreakPill&gt;
+│  │  ├─ &lt;<span class="api">QuoteCard</span>&gt;              <span class="api">← useQuote()</span>
+│  │  ├─ &lt;<span class="api">WeatherCard</span>&gt;            <span class="api">← useWeather()</span>
+│  │  ├─ &lt;RestDayCard&gt;   <span class="note">or</span>
+│  │  ├─ &lt;ProgressRingCard&gt; → &lt;Ring&gt;
+│  │  ├─ &lt;ShuffleNote&gt; · &lt;ActionRow&gt;
+│  │  └─ &lt;ExerciseList&gt; → &lt;ExerciseRow&gt; → &lt;TimerChip&gt;
+│  │
+│  ├─ &lt;<b>ProgressView</b>&gt;
+│  │  ├─ &lt;HeroCard&gt; · &lt;LevelCard&gt; → &lt;Meter&gt;
+│  │  ├─ &lt;StatGrid&gt; → &lt;StatCard&gt; ×2
+│  │  ├─ &lt;<span class="api">CaloriesCard</span>&gt;           <span class="api">← useCaloriesBurned()</span>
+│  │  ├─ &lt;RecordGrid&gt; → &lt;RecordCard&gt; ×3
+│  │  ├─ &lt;Heatmap&gt; → &lt;HeatCell&gt; ×84 ┐
+│  │  ├─ &lt;WeeklyBars&gt; (SVG)          ├→ &lt;ChartTip&gt;
+│  │  └─ &lt;BadgeGrid&gt; → &lt;Badge&gt; ×10
+│  │
+│  ├─ &lt;<b>RoutineView</b>&gt;                <span class="note">editingId useState</span>
+│  │  ├─ &lt;RestDayPicker&gt; → &lt;DayButton&gt; ×7
+│  │  ├─ &lt;EditableList&gt; → &lt;EditableRow&gt; → &lt;DragHandle&gt;
+│  │  ├─ &lt;<span class="api">LibraryBrowser</span>&gt;         <span class="api">← useExerciseSearch()</span>
+│  │  └─ &lt;ExerciseForm&gt; → &lt;Field&gt; ×4
+│  │
+│  ├─ &lt;GuidedPlayer&gt;                <span class="note">local useState — ticks 1Hz</span>
+│  ├─ &lt;TimerOverlay&gt;                <span class="note">local useState — ticks 1Hz</span>
+│  ├─ &lt;Celebration&gt;                 <span class="note">gains = diffGains(before, after)</span>
+│  └─ &lt;TabBar&gt;</div>
+
+    <div class="legend">
+      <i><span class="swatch" style="background:var(--green)"></span> shared state (context)</i>
+      <i><span class="swatch" style="background:var(--blue)"></span> API-backed component</i>
+      <i><span class="swatch" style="background:rgba(255,255,255,.28)"></span> presentational</i>
+    </div>
+  </div>
+
+  <div>
+    <h2>State &amp; data flow</h2>
+    <div class="tree" style="white-space:normal;font-family:Outfit,sans-serif;font-size:12.5px;line-height:1.7">
+      <b style="color:var(--ink)">The store</b> — <code>routine · todayPlan · restDays · today · history</code>, persisted to
+      <code>localStorage["rise-v2"]</code>. Same key and shape as the pre-React app, so existing users keep their history.<br><br>
+      <b style="color:var(--ink)">Derived, never stored</b> — level, streaks, best week/month, badges, heatmap intensity.
+      All pure functions of <code>(history, restDays)</code>, memoised.<br><br>
+      <b style="color:var(--ink)">Deliberately local</b> — timer and player countdowns. At 1Hz in the store they would
+      re-render 84 heatmap cells every second for a number one overlay displays.<br><br>
+      <b style="color:var(--ink)">Events go up</b> — <code>ExerciseRow onToggle(id)</code> → <code>ExerciseList</code> →
+      <code>TodayView</code> → <code>dispatch</code> → every consumer re-renders from one source.
+      Confetti, haptics and toasts fire in the handler, so the reducer stays pure.
+    </div>
+
+    <h2 style="margin-top:26px">The four APIs</h2>
+    <table>
+      <tr><th>API</th><th>Auth</th><th>Feeds</th><th>Falls back to</th></tr>
+      <tr><td><b>wger</b><br>880 exercises</td><td><span class="pill">no key</span></td><td>LibraryBrowser</td><td>60 bundled exercises</td></tr>
+      <tr><td><b>Open-Meteo</b><br>current conditions</td><td><span class="pill">no key</span></td><td>WeatherCard</td><td>card hides itself</td></tr>
+      <tr><td><b>API Ninjas</b><br>calories burned</td><td><span class="pill key">free key</span></td><td>CaloriesCard</td><td>setup note</td></tr>
+      <tr><td><b>DummyJSON</b><br>quotes</td><td><span class="pill">no key</span></td><td>QuoteCard</td><td>36 bundled quotes</td></tr>
+    </table>
+  </div>
+</div>
+
+</body></html>
