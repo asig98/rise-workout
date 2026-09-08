@@ -7,7 +7,7 @@ quote from four public APIs.
 
 Built with **React + Vite**. Installable as a PWA and works offline.
 
-![Rise — Today, Progress and Routine](docs/screenshot-today.png)
+![Rise — Today, Progress and Routine](documentation/screenshot-today.png)
 
 ---
 
@@ -88,10 +88,10 @@ in `scripts/shots/`.
 
 The wireframe and component plan were drawn **before** the React implementation:
 
-- **[`docs/wireframe.png`](docs/wireframe.png)** — screen regions, the component tree, and the state/data-flow notes at a glance
-- **[`docs/WIREFRAME.md`](docs/WIREFRAME.md)** — the same thing written out: every component, where state lives, what each child needs, how events travel up
+- **[`documentation/wireframe.png`](documentation/wireframe.png)** — screen regions, the component tree, and the state/data-flow notes at a glance
+- **[`documentation/WIREFRAME.md`](documentation/WIREFRAME.md)** — the same thing written out: every component, where state lives, what each child needs, how events travel up
 
-![Wireframe and component tree](docs/wireframe.png)
+![Wireframe and component tree](documentation/wireframe.png)
 
 ### How state is organised
 
@@ -154,16 +154,47 @@ integrations. Two things were carried over deliberately rather than rewritten:
 
 ## Deploy
 
-Deployed on Vercel. The build is a static bundle, so any static host works:
+The app is deployed **twice**, from the same `main` branch, and the split is
+deliberate.
+
+| Host | URL | Purpose |
+|---|---|---|
+| **Vercel** | `rise-workout.vercel.app` | The public/submission link. Builds on every push. |
+| **GitHub Pages** | `asig98.github.io/rise-workout` | The origin installed PWAs are pinned to. |
+
+Keeping both alive matters for a reason that isn't obvious: `localStorage` is
+scoped **per origin**, and every workout, streak and personal record lives
+there. Moving the app to a new domain doesn't migrate that data — it silently
+starts people over at zero. So the Pages URL stays put for anyone who already
+added Rise to their home screen.
+
+### Vercel (automatic)
+
+Import the repo at [vercel.com/new](https://vercel.com/new). Vite is
+auto-detected and `vercel.json` is already in the repo, so no configuration is
+needed. Set `VITE_API_NINJAS_KEY` in Settings → Environment Variables for
+calorie estimates, then redeploy — Vite bakes env vars in at build time.
+
+### GitHub Pages (one command)
+
+Pages has no build step; it serves files exactly as committed. So the built
+output is committed to `docs/`:
 
 ```bash
-npm i -g vercel
-vercel            # preview
-vercel --prod     # production
+npm run build:pages
+git add docs && git commit -m "Rebuild Pages bundle" && git push
 ```
 
-Set `VITE_API_NINJAS_KEY` in the Vercel project's environment variables for calorie
-estimates in production.
+That runs `vite build --base=/rise-workout/ --outDir=docs`, because Pages serves
+this repo from a subfolder and every asset URL needs that prefix. The service
+worker derives its own base from `self.location`, so one `sw.js` works under
+both hosts unmodified.
+
+Repo setting, once: **Settings → Pages → Source: Deploy from a branch →
+`main` / `/docs`**.
+
+Re-run that command whenever you want the installed app updated. The Vercel side
+needs nothing — it rebuilds from source on every push.
 
 ## Licence
 
