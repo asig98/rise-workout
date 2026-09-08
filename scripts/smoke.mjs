@@ -15,7 +15,12 @@ import { existsSync } from "node:fs";
 import { extname, join, resolve } from "node:path";
 
 const OFFLINE = process.argv.includes("--offline");
-const DIST = resolve("dist");
+/* --pages exercises the GitHub Pages build, which is served from a SUBFOLDER
+   (asig98.github.io/rise-workout) rather than a domain root. That difference
+   breaks base-path mistakes loudly, so it's worth testing rather than assuming. */
+const PAGES = process.argv.includes("--pages");
+const PREFIX = PAGES ? "/rise-workout" : "";
+const DIST = resolve(PAGES ? "docs" : "dist");
 const SHOTS = resolve("scripts/shots");
 const PORT = 4317;
 
@@ -27,7 +32,9 @@ const MIME = {
 /* ---------- a static server for dist/ ---------- */
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, "http://localhost");
-  let file = join(DIST, url.pathname === "/" ? "index.html" : url.pathname);
+  // Serve DIST at PREFIX, exactly as GitHub Pages serves a repo subfolder.
+  let path = url.pathname.startsWith(PREFIX) ? url.pathname.slice(PREFIX.length) : url.pathname;
+  let file = join(DIST, !path || path === "/" ? "index.html" : path);
   if (!existsSync(file)) file = join(DIST, "index.html");
   try {
     const body = await readFile(file);
@@ -118,17 +125,24 @@ page.on("console", (m) => {
 });
 page.on("pageerror", (e) => errors.push("PAGE ERROR: " + e.message));
 
+/* A wrong base path shows up as 404s on the bundle, not as a thrown error, so
+   watch responses directly. */
+const notFound = [];
+page.on("response", (r) => {
+  if (r.status() === 404 && new URL(r.url()).port === String(PORT)) notFound.push(new URL(r.url()).pathname);
+});
+
 const results = [];
 const check = (name, pass, detail = "") => {
   results.push({ name, pass, detail });
   console.log(`${pass ? "  ok" : "FAIL"}  ${name}${detail ? "  — " + detail : ""}`);
 };
 
-await page.goto(`http://localhost:${PORT}/`, { waitUntil: "networkidle" });
+await page.goto(`http://localhost:${PORT}${PREFIX}/`, { waitUntil: "networkidle" });
 await page.waitForTimeout(900);
 
 /* ---------- Today ---------- */
-console.log(`\n== TODAY ${OFFLINE ? "(offline)" : "(mocked APIs)"} ==`);
+console.log(`\n== TODAY ${OFFLINE ? "(offline)" : "(mocked APIs)"}${PAGES ? " [pages build, served at " + PREFIX + "/]" : ""} ==`);
 check("app mounts", await page.locator("h1", { hasText: "Rise." }).isVisible());
 check("routine renders 8 rows", (await page.locator(".exercise").count()) === 8,
   `${await page.locator(".exercise").count()} rows`);
@@ -274,6 +288,9 @@ check("exit closes the player", !(await page.locator("#player.show").isVisible()
 console.log("\n== APIs CALLED ==");
 console.log("  " + ([...apiHits].join(", ") || "none"));
 
+console.log("\n== ASSET 404s ==");
+console.log("  " + (notFound.length ? notFound.join(", ") : "none"));
+
 console.log("\n== CONSOLE ERRORS ==");
 if (errors.length) errors.forEach((e) => console.log("  ! " + e));
 else console.log("  none");
@@ -283,4 +300,4 @@ console.log(`\n${results.length - failed.length}/${results.length} checks passed
 
 await browser.close();
 server.close();
-process.exit(failed.length || errors.length ? 1 : 0);
+process.exit(failed.length || errors.length || notFound.length ? 1 : 0);
